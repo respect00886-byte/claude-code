@@ -1,0 +1,170 @@
+import { useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { Check, Trash2 } from 'lucide-react'
+import { db, saveBodyWeight, type BodyWeight } from '../db/db'
+import { addDays, formatDate, toDateKey } from '../lib/date'
+import { fmt } from '../lib/stats'
+import PageHeader from '../components/PageHeader'
+import Stepper from '../components/Stepper'
+import TrendChart from '../components/TrendChart'
+import Chip from '../components/Chip'
+
+const RANGES = [
+  { key: '1m', label: '1か月', days: 30 },
+  { key: '3m', label: '3か月', days: 90 },
+  { key: '1y', label: '1年', days: 365 },
+  { key: 'all', label: '全期間', days: Infinity },
+] as const
+
+export default function WeightPage() {
+  const records = useLiveQuery(() => db.bodyWeights.orderBy('date').toArray(), [])
+  if (!records) return <PageHeader title="体重" />
+  return <WeightView records={records} />
+}
+
+function WeightView({ records }: { records: BodyWeight[] }) {
+  const today = toDateKey()
+  const todays = records.find((r) => r.date === today)
+  const latest = records.at(-1)
+
+  const [date, setDate] = useState(today)
+  const [weight, setWeight] = useState(todays?.weight ?? latest?.weight ?? 60)
+  const [bodyFat, setBodyFat] = useState<number | undefined>(todays?.bodyFat ?? latest?.bodyFat)
+  const [saved, setSaved] = useState(false)
+  const [range, setRange] = useState<(typeof RANGES)[number]['key']>('1m')
+
+  const days = RANGES.find((r) => r.key === range)!.days
+  const from = Number.isFinite(days) ? addDays(today, -days) : ''
+  const chartData = records
+    .filter((r) => r.date >= from)
+    .map((r) => ({ date: r.date, value: r.weight }))
+
+  const first = chartData[0]?.value
+  const last = chartData.at(-1)?.value
+  const diff = first !== undefined && last !== undefined ? last - first : undefined
+
+  const save = async () => {
+    await saveBodyWeight(date, weight, bodyFat)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1500)
+  }
+
+  return (
+    <>
+      <PageHeader title="体重" />
+      <main className="flex flex-col gap-4 px-4">
+        <section className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold">記録する</h2>
+            <input
+              type="date"
+              value={date}
+              max={today}
+              onChange={(e) => {
+                const d = e.target.value
+                if (!d) return
+                setDate(d)
+                const rec = records.find((r) => r.date === d)
+                if (rec) {
+                  setWeight(rec.weight)
+                  setBodyFat(rec.bodyFat)
+                }
+              }}
+              className="rounded-lg bg-surface-2 px-2 py-1 text-sm"
+            />
+          </div>
+          <Stepper
+            label="体重"
+            unit="kg"
+            value={weight}
+            onChange={setWeight}
+            step={0.1}
+            decimals={1}
+          />
+          {bodyFat === undefined ? (
+            <button onClick={() => setBodyFat(20)} className="text-sm text-muted underline">
+              体脂肪率も記録する
+            </button>
+          ) : (
+            <Stepper
+              label="体脂肪率 (任意)"
+              unit="%"
+              value={bodyFat}
+              onChange={setBodyFat}
+              step={0.1}
+              decimals={1}
+              max={80}
+            />
+          )}
+          <button
+            onClick={save}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-lg font-bold text-accent-ink active:opacity-80"
+          >
+            {saved ? (
+              <>
+                <Check size={22} /> 保存しました
+              </>
+            ) : records.some((r) => r.date === date) ? (
+              '上書き保存'
+            ) : (
+              '保存する'
+            )}
+          </button>
+        </section>
+
+        <section className="rounded-2xl border border-line bg-surface p-4">
+          <div className="mb-1 flex items-baseline justify-between">
+            <h2 className="font-bold">体重の推移</h2>
+            {diff !== undefined && chartData.length > 1 && (
+              <span className="text-sm text-muted tabular-nums">
+                期間内 {diff > 0 ? '+' : ''}
+                {fmt(Math.round(diff * 10) / 10)}kg
+              </span>
+            )}
+          </div>
+          <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1">
+            {RANGES.map((r) => (
+              <Chip key={r.key} active={range === r.key} onClick={() => setRange(r.key)}>
+                {r.label}
+              </Chip>
+            ))}
+          </div>
+          <TrendChart data={chartData} unit="kg" label="体重" />
+        </section>
+
+        {records.length > 0 && (
+          <section className="rounded-2xl border border-line bg-surface p-4">
+            <h2 className="mb-2 font-bold">最近の記録</h2>
+            <ul className="divide-y divide-line">
+              {[...records]
+                .reverse()
+                .slice(0, 14)
+                .map((r) => (
+                  <li key={r.id} className="flex items-center gap-3 py-2 tabular-nums">
+                    <span className="w-24 text-sm text-muted">{formatDate(r.date)}</span>
+                    <span className="flex-1 font-semibold">
+                      {fmt(r.weight)} kg
+                      {r.bodyFat !== undefined && (
+                        <span className="ml-2 text-sm font-normal text-muted">
+                          {fmt(r.bodyFat)}%
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      aria-label={`${formatDate(r.date)}の記録を削除`}
+                      onClick={() =>
+                        confirm('この記録を削除しますか？') && db.bodyWeights.delete(r.id)
+                      }
+                      className="rounded-full p-2 text-muted active:bg-surface-2"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </section>
+        )}
+      </main>
+    </>
+  )
+}

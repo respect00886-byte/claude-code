@@ -1,0 +1,28 @@
+import type { Category } from './db'
+
+export const SEED_EXERCISES: { name: string; category: Category }[] = [
+  { name: 'ベンチプレス', category: '胸' },
+  { name: 'インクラインベンチプレス', category: '胸' },
+  { name: 'ダンベルフライ', category: '胸' },
+  { name: 'チェストプレス', category: '胸' },
+  { name: 'ディップス', category: '胸' },
+  { name: 'デッドリフト', category: '背中' },
+  { name: 'ラットプルダウン', category: '背中' },
+  { name: '懸垂', category: '背中' },
+  { name: 'ベントオーバーロウ', category: '背中' },
+  { name: 'シーテッドロウ', category: '背中' },
+  { name: 'スクワット', category: '脚' },
+  { name: 'レッグプレス', category: '脚' },
+  { name: 'レッグエクステンション', category: '脚' },
+  { name: 'レッグカール', category: '脚' },
+  { name: 'ブルガリアンスクワット', category: '脚' },
+  { name: 'ショルダープレス', category: '肩' },
+  { name: 'サイドレイズ', category: '肩' },
+  { name: 'リアレイズ', category: '肩' },
+  { name: 'バーベルカール', category: '腕' },
+  { name: 'ダンベルカール', category: '腕' },
+  { name: 'トライセプスエクステンション', category: '腕' },
+  { name: 'ケーブルプッシュダウン', category: '腕' },
+  { name: 'クランチ', category: '腹' },
+  { name: 'アブローラー', category: '腹' },
+]
