@@ -1,14 +1,6 @@
 import { Check, NotebookPen, Plus, SlidersHorizontal, X } from 'lucide-react'
 import type { Exercise, MenuItem, WorkoutSet } from '../db/db'
-import {
-  describeSets,
-  fmt,
-  fmtVolume,
-  formatLoad,
-  groupSets,
-  volume,
-  type SetGroup,
-} from '../lib/stats'
+import { describeSets, fmt, fmtWeight, formatLoad, groupSets, type SetGroup } from '../lib/stats'
 import { getSettings } from '../lib/settings'
 import { displayWeight } from '../lib/units'
 
@@ -45,6 +37,7 @@ export default function ExerciseCard({
   const planned = plan && done === 0
   const reached = plan && done >= plan.sets
   const unit = getSettings().unit
+  const inputUnit = exercise.inputUnit ?? unit
 
   return (
     <section
@@ -52,11 +45,6 @@ export default function ExerciseCard({
     >
       <div className="flex items-start gap-2">
         <h2 className="min-w-0 flex-1 pt-2 font-bold">{exercise.name}</h2>
-        {done > 0 && (
-          <span className="pt-2.5 text-xs text-muted tabular-nums">
-            {bodyweight ? `合計${sets.reduce((n, s) => n + s.reps, 0)}回` : fmtVolume(volume(sets))}
-          </span>
-        )}
         <button
           onClick={onNote}
           aria-label={`${exercise.name}のメモ`}
@@ -115,6 +103,10 @@ export default function ExerciseCard({
                       {fmt(displayWeight(g.weight, unit))}
                     </span>
                     <span className="text-sm text-muted">{unit}</span>
+                    {/* lb で入力した種目は、元の lb の値も添える */}
+                    {inputUnit !== unit && (
+                      <span className="text-xs text-muted">({fmtWeight(g.weight, inputUnit)})</span>
+                    )}
                   </>
                 )}
                 <span className="text-sm text-muted">×</span>

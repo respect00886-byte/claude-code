@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkoutSet } from '../db/db'
 import {
+  categoryDailyStats,
+  volumeByCategory,
   dailyStats,
   describeSets,
   estimate1RM,
@@ -89,5 +91,50 @@ describe('stats', () => {
     expect(formatLoad(0, 'bodyweight')).toBe('自重')
     expect(formatLoad(10, 'bodyweight')).toBe('自重+10kg')
     expect(describeSets({ weight: 0, reps: 10, sets: 3 }, 'bodyweight')).toBe('自重×10回×3セット')
+  })
+
+  it('volumeByCategory sums per body part in category order and counts bodyweight reps', () => {
+    const exercises = new Map([
+      [1, { category: '胸' as const, kind: 'weighted' as const }],
+      [8, { category: '背中' as const, kind: 'bodyweight' as const }],
+      [11, { category: '脚' as const, kind: 'weighted' as const }],
+    ])
+    const rows = volumeByCategory(
+      [
+        { ...set('d', 80, 5), exerciseId: 11 },
+        { ...set('d', 60, 10), exerciseId: 1 },
+        { ...set('d', 0, 8), exerciseId: 8 },
+        { ...set('d', 10, 5), exerciseId: 8 },
+        { ...set('d', 60, 8), exerciseId: 1 },
+      ],
+      exercises,
+    )
+    expect(rows).toEqual([
+      { category: '胸', volume: 1080, bodyweightReps: 0, sets: 2 },
+      { category: '背中', volume: 50, bodyweightReps: 13, sets: 2 },
+      { category: '脚', volume: 400, bodyweightReps: 0, sets: 1 },
+    ])
+  })
+
+  it('categoryDailyStats aggregates one body part by date', () => {
+    const exercises = new Map([
+      [1, { category: '胸' as const, kind: 'weighted' as const }],
+      [2, { category: '胸' as const, kind: 'weighted' as const }],
+      [11, { category: '脚' as const, kind: 'weighted' as const }],
+    ])
+    const rows = categoryDailyStats(
+      [
+        { ...set('2026-09-03', 60, 10), exerciseId: 1 },
+        { ...set('2026-09-01', 50, 10), exerciseId: 2 },
+        { ...set('2026-09-01', 60, 10), exerciseId: 1 },
+        { ...set('2026-09-01', 100, 5), exerciseId: 11 },
+      ],
+      exercises,
+      '胸',
+    )
+    expect(rows).toEqual([
+      { date: '2026-09-01', volume: 1100, sets: 2 },
+      { date: '2026-09-03', volume: 600, sets: 1 },
+    ])
   })
 })

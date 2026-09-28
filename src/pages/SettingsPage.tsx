@@ -10,15 +10,10 @@ import {
   type ExerciseKind,
 } from '../db/db'
 import { fmt } from '../lib/stats'
-import { getSettings, updateSettings, useSettings } from '../lib/settings'
+import { updateSettings, useSettings, type WeightUnit } from '../lib/settings'
 import RoutineManager from '../components/RoutineManager'
 import { stepInUnit } from '../lib/units'
 
-/** 重量の刻み (kg で保存) を設定中の単位で表示 */
-const fmtStep = (kgStep: number) => {
-  const unit = getSettings().unit
-  return `${fmt(stepInUnit(kgStep, unit))}${unit}`
-}
 import { exportData, importData, parseBackup, saveJsonFile } from '../lib/backup'
 import { formatDate, toDateKey } from '../lib/date'
 import {
@@ -195,7 +190,10 @@ export default function SettingsPage() {
                       >
                         {e.name}
                         <span className="block text-xs text-muted">
-                          {e.kind === 'bodyweight' ? '自重' : `${fmtStep(e.step)}刻み`}
+                          {e.kind === 'bodyweight'
+                            ? '自重'
+                            : `${fmtStep(e.step, e.inputUnit ?? unit)}刻み`}
+                          {e.inputUnit === 'lb' && '・lb で入力'}
                         </span>
                       </span>
                       <button
@@ -251,7 +249,14 @@ export default function SettingsPage() {
   )
 }
 
-type ExerciseValues = Pick<Exercise, 'name' | 'category' | 'kind' | 'step'>
+/** 重量の刻み (kg で保存) を入力単位で表示 */
+const fmtStep = (kgStep: number, unit: WeightUnit) => `${fmt(stepInUnit(kgStep, unit))}${unit}`
+
+/** lb 入力では同じ lb の刻みになる候補を除く (1.25kg と 2.5kg はどちらも 5lb になるため) */
+const stepsFor = (unit: WeightUnit) =>
+  unit === 'kg' ? WEIGHT_STEPS : WEIGHT_STEPS.filter((v) => v !== 1.25 && v !== 2)
+
+type ExerciseValues = Pick<Exercise, 'name' | 'category' | 'kind' | 'step' | 'inputUnit'>
 
 function ExerciseForm({
   initial,
@@ -264,12 +269,23 @@ function ExerciseForm({
   const [category, setCategory] = useState<Category>(initial?.category ?? '胸')
   const [kind, setKind] = useState<ExerciseKind>(initial?.kind ?? 'weighted')
   const [step, setStep] = useState(initial?.step ?? 2.5)
+  const displayUnit = useSettings().unit
+  const [inputUnit, setInputUnit] = useState<WeightUnit>(initial?.inputUnit ?? displayUnit)
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
-        if (name.trim()) onSave({ name: name.trim(), category, kind, step })
+        if (!name.trim()) return
+        // 未設定のまま表示の単位を選んだ場合は未設定のまま (表示の単位に合わせて変わる)
+        const keepDefault = initial?.inputUnit === undefined && inputUnit === displayUnit
+        onSave({
+          name: name.trim(),
+          category,
+          kind,
+          step,
+          inputUnit: keepDefault ? undefined : inputUnit,
+        })
       }}
     >
       <input
@@ -302,18 +318,37 @@ function ExerciseForm({
         </div>
       </fieldset>
       <fieldset>
+        <legend className="mb-1.5 text-xs font-medium text-muted">重量の入力単位</legend>
+        <div className="flex flex-wrap gap-2">
+          <Chip active={inputUnit === 'kg'} onClick={() => setInputUnit('kg')}>
+            kg
+          </Chip>
+          <Chip active={inputUnit === 'lb'} onClick={() => setInputUnit('lb')}>
+            lb（ポンド）
+          </Chip>
+        </div>
+        <p className="mt-1.5 text-xs text-muted">
+          マシンやダンベルが lb 表記のときは lb にすると、lb で入力して kg に換算して記録できます。
+        </p>
+      </fieldset>
+      <fieldset>
         <legend className="mb-1.5 text-xs font-medium text-muted">
           ±ボタンで変わる重量{kind === 'bodyweight' && '（加重）'}
         </legend>
         <div className="flex flex-wrap gap-2">
-          {WEIGHT_STEPS.map((v) => (
-            <Chip key={v} active={step === v} onClick={() => setStep(v)}>
-              {fmtStep(v)}
+          {stepsFor(inputUnit).map((v) => (
+            <Chip
+              key={v}
+              active={stepInUnit(step, inputUnit) === stepInUnit(v, inputUnit)}
+              onClick={() => setStep(v)}
+            >
+              {fmtStep(v, inputUnit)}
             </Chip>
           ))}
         </div>
         <p className="mt-1.5 text-xs text-muted">
-          目安：バーベル {fmtStep(2.5)} / ダンベル {fmtStep(1)}〜{fmtStep(2)} / マシン {fmtStep(5)}
+          目安：バーベル {fmtStep(2.5, inputUnit)} / ダンベル {fmtStep(1, inputUnit)}
+          {inputUnit === 'kg' && `〜${fmtStep(2, inputUnit)}`} / マシン {fmtStep(5, inputUnit)}
         </p>
       </fieldset>
       <button

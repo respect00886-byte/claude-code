@@ -35,13 +35,22 @@ import {
 } from '../db/menu'
 import { addDays, formatDate, isDateKey } from '../lib/date'
 import { useToday } from '../lib/useToday'
+import type { WeightUnit } from '../lib/settings'
 import { showToast, showUndoToast } from '../lib/toast'
-import { byInputOrder, describeSets, fmtVolume, volume, type SetGroup } from '../lib/stats'
+import {
+  byInputOrder,
+  describeSets,
+  fmtVolume,
+  volume,
+  volumeByCategory,
+  type SetGroup,
+} from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
 import ExercisePicker from '../components/ExercisePicker'
 import EntryForm, { type EntryValues } from '../components/EntryForm'
 import ExerciseCard from '../components/ExerciseCard'
+import CategoryVolume from '../components/CategoryVolume'
 import NoteForm from '../components/NoteForm'
 import RoutinePicker from '../components/RoutinePicker'
 import SaveRoutineForm from '../components/SaveRoutineForm'
@@ -83,6 +92,10 @@ const UNKNOWN_EXERCISE = (id: number): Exercise => ({
 /** その日の最後に入力したセット */
 const lastEntered = (sets: WorkoutSet[]) =>
   sets.reduce<WorkoutSet | undefined>((a, b) => (!a || b.id > a.id ? b : a), undefined)
+
+/** 種目の重量の入力単位を覚えておく (lb 表記のマシンなど) */
+const setInputUnit = (exerciseId: number, inputUnit: WeightUnit) =>
+  db.exercises.update(exerciseId, { inputUnit })
 
 /** 軽い振動で記録できたことを伝える (対応端末のみ) */
 const haptic = () => navigator.vibrate?.(10)
@@ -206,6 +219,10 @@ export default function TodayPage() {
 
   const allSets = items?.flatMap((d) => d.sets) ?? []
   const totalVolume = volume(allSets)
+  const categoryRows = volumeByCategory(
+    allSets,
+    new Map(items?.map((it) => [it.exercise.id, it.exercise])),
+  )
   const hasItems = !!items && items.length > 0
 
   return (
@@ -269,6 +286,8 @@ export default function TodayPage() {
 
       {/* 下部の「種目を追加」ボタンや通知に最後のカードが隠れないよう余白をとる */}
       <main className="flex flex-col gap-3 px-4 pb-40">
+        <CategoryVolume rows={categoryRows} />
+
         {current?.dayNote && (
           <button
             onClick={() => openNote(DAY_NOTE, 'この日のメモ', current.dayNote)}
@@ -405,6 +424,8 @@ export default function TodayPage() {
             key={`add-${sheet.exercise.id}`}
             kind={sheet.exercise.kind}
             step={sheet.exercise.step}
+            inputUnit={sheet.exercise.inputUnit}
+            onInputUnitChange={(u) => setInputUnit(sheet.exercise.id, u)}
             initial={sheet.initial}
             previous={sheet.previous}
             header={
@@ -546,6 +567,8 @@ function EditGroup({ sheet, onChange, onDirtyChange, onSubmit, onDelete }: EditG
       key={`edit-${group.ids[0]}-${index}`}
       kind={exercise.kind}
       step={exercise.step}
+      inputUnit={exercise.inputUnit}
+      onInputUnitChange={(u) => setInputUnit(exercise.id, u)}
       initial={initial}
       singleSet={index !== null}
       header={header}

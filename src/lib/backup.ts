@@ -66,7 +66,8 @@ function isExercise(v: unknown): v is Exercise {
     typeof v.isCustom === 'boolean' &&
     typeof v.archived === 'boolean' &&
     (EXERCISE_KINDS as readonly unknown[]).includes(v.kind) &&
-    isNum(v.step, 0.01, 100)
+    isNum(v.step, 0.01, 100) &&
+    (v.inputUnit === undefined || v.inputUnit === 'kg' || v.inputUnit === 'lb')
   )
 }
 

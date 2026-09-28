@@ -20,6 +20,9 @@ interface Props {
 /** 日付 × 数値の単一系列折れ線グラフ */
 export default function TrendChart({ data, unit, label }: Props) {
   const c = useThemeColors()
+  // 目盛りの数字が切れないよう、いちばん長いラベルに合わせて幅を決める
+  const longest = Math.max(...data.map((d) => fmt(d.value).length), 1)
+  const axisWidth = Math.max(36, longest * 8 + 12)
   if (data.length === 0) {
     return (
       <div className="flex h-56 items-center justify-center text-sm text-muted">
@@ -45,7 +48,7 @@ export default function TrendChart({ data, unit, label }: Props) {
             tick={{ fill: c.muted, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            width={48}
+            width={axisWidth}
             tickFormatter={(v: number) => fmt(v)}
           />
           <Tooltip

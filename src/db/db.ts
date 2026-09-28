@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import { SEED_EXERCISES, seedDefaults } from './seed'
+import type { WeightUnit } from '../lib/settings'
 
 export const CATEGORIES = ['胸', '背中', '脚', '肩', '腕', '腹', 'その他'] as const
 export type Category = (typeof CATEGORIES)[number]
@@ -18,6 +19,11 @@ export interface Exercise {
   kind: ExerciseKind
   /** ステッパーの重量の刻み (kg) */
   step: number
+  /**
+   * 重量を入力する単位。lb 表記のマシンやダンベル用。
+   * 未設定なら設定画面の表示単位で入力する (重量の保存は常に kg)
+   */
+  inputUnit?: WeightUnit
   isCustom: boolean
   archived: boolean
 }

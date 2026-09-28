@@ -220,6 +220,14 @@ describe('backup', () => {
     expect((await other.notes.toArray())[0].text).toBe('寝不足')
   })
 
+  it('keeps a valid per-exercise input unit and rejects unknown ones', async () => {
+    const data = await valid()
+    data.exercises[0].inputUnit = 'lb'
+    expect(parseBackup(JSON.stringify(data)).exercises[0].inputUnit).toBe('lb')
+    data.exercises[0].inputUnit = 'stone'
+    expect(() => parseBackup(JSON.stringify(data))).toThrow('種目の1件目')
+  })
+
   it('rejects routines that reference unknown exercises', async () => {
     const data = await valid()
     data.routines = [
