@@ -41,10 +41,47 @@ export interface BodyWeight {
   bodyFat?: number
 }
 
+/** メニューの1種目分 (目標の重量・回数・セット数) */
+export interface MenuItem {
+  exerciseId: number
+  weight: number
+  reps: number
+  sets: number
+}
+
+/** 名前を付けて保存したメニュー */
+export interface Routine {
+  id: number
+  name: string
+  items: MenuItem[]
+  createdAt: number
+}
+
+/** その日にやる予定の種目 (前回のコピーやルーティンから作る)。記録とは別に持つ */
+export interface PlanItem extends MenuItem {
+  id: number
+  date: string
+  /** 表示順 */
+  order: number
+}
+
+/** メモ。exerciseId が 0 ならその日全体のメモ */
+export interface Note {
+  id: number
+  date: string
+  exerciseId: number
+  text: string
+}
+
+export const DAY_NOTE = 0
+
 export class GymDB extends Dexie {
   exercises!: EntityTable<Exercise, 'id'>
   workoutSets!: EntityTable<WorkoutSet, 'id'>
   bodyWeights!: EntityTable<BodyWeight, 'id'>
+  routines!: EntityTable<Routine, 'id'>
+  plans!: EntityTable<PlanItem, 'id'>
+  notes!: EntityTable<Note, 'id'>
 
   constructor(name = 'gymlog') {
     super(name)
@@ -66,6 +103,12 @@ export class GymDB extends Dexie {
             e.step ??= d.step
           }),
       )
+    // v3: ルーティン・予定・メモ
+    this.version(3).stores({
+      routines: '++id, name',
+      plans: '++id, date, &[date+exerciseId]',
+      notes: '++id, date, &[date+exerciseId]',
+    })
     this.on('populate', (tx) => {
       tx.table('exercises').bulkAdd(
         SEED_EXERCISES.map((e) => ({ ...e, isCustom: false, archived: false })),

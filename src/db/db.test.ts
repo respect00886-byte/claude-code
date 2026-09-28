@@ -163,8 +163,13 @@ describe('backup', () => {
       delete e.kind
       delete e.step
     }
+    delete data.routines
+    delete data.plans
+    delete data.notes
+    delete data.settings
     const parsed = parseBackup(JSON.stringify(data))
-    expect(parsed.version).toBe(2)
+    expect(parsed.version).toBe(3)
+    expect(parsed.routines).toEqual([])
     expect(parsed.exercises.find((e) => e.name === '懸垂')).toMatchObject({
       kind: 'bodyweight',
       step: 2.5,
@@ -174,7 +179,7 @@ describe('backup', () => {
 
   it('rejects unsupported versions', async () => {
     const data = await valid()
-    data.version = 3
+    data.version = 4
     expect(() => parseBackup(JSON.stringify(data))).toThrow('バージョン')
   })
 
@@ -200,6 +205,32 @@ describe('backup', () => {
     const dupDate = await valid()
     dupDate.bodyWeights.push({ ...dupDate.bodyWeights[0], id: 99 })
     expect(() => parseBackup(JSON.stringify(dupDate))).toThrow('重複')
+  })
+
+  it('round-trips routines, plans and notes', async () => {
+    const { addPlan, saveNote, saveRoutine } = await import('./menu')
+    await saveRoutine('胸の日', [{ exerciseId: 1, weight: 60, reps: 10, sets: 3 }], db)
+    await addPlan('2026-09-02', [{ exerciseId: 1, weight: 60, reps: 10, sets: 3 }], db)
+    await saveNote('2026-09-02', 0, '寝不足', db)
+    const json = JSON.stringify(await exportData(db))
+    const other = new GymDB(`test-${Math.random()}`)
+    await importData(parseBackup(json), other)
+    expect(await other.routines.count()).toBe(1)
+    expect(await other.plans.count()).toBe(1)
+    expect((await other.notes.toArray())[0].text).toBe('寝不足')
+  })
+
+  it('rejects routines that reference unknown exercises', async () => {
+    const data = await valid()
+    data.routines = [
+      {
+        id: 1,
+        name: 'x',
+        createdAt: 1,
+        items: [{ exerciseId: 9999, weight: 1, reps: 1, sets: 1 }],
+      },
+    ]
+    expect(() => parseBackup(JSON.stringify(data))).toThrow('存在しない種目')
   })
 
   it('rejects sets that reference unknown exercises', async () => {

@@ -1,32 +1,50 @@
 import { useCallback, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, ChevronRight, Dumbbell, History, Plus, SlidersHorizontal } from 'lucide-react'
 import {
+  BookmarkPlus,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Dumbbell,
+  History,
+  ListChecks,
+  NotebookPen,
+  Plus,
+} from 'lucide-react'
+import {
+  DAY_NOTE,
   addSets,
   db,
   deleteSets,
   lastSetOf,
   updateSetGroup,
   type Exercise,
+  type MenuItem,
+  type Routine,
   type WorkoutSet,
 } from '../db/db'
+import {
+  addPlan,
+  menuOfDay,
+  previousNote,
+  previousWorkoutDate,
+  removePlan,
+  saveNote,
+  saveRoutine,
+} from '../db/menu'
 import { addDays, formatDate, isDateKey } from '../lib/date'
 import { useToday } from '../lib/useToday'
-import { showUndoToast } from '../lib/toast'
-import {
-  byInputOrder,
-  describeSets,
-  fmt,
-  formatLoad,
-  groupSets,
-  volume,
-  type SetGroup,
-} from '../lib/stats'
+import { showToast, showUndoToast } from '../lib/toast'
+import { byInputOrder, describeSets, fmtVolume, volume, type SetGroup } from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
 import ExercisePicker from '../components/ExercisePicker'
 import EntryForm, { type EntryValues } from '../components/EntryForm'
+import ExerciseCard from '../components/ExerciseCard'
+import NoteForm from '../components/NoteForm'
+import RoutinePicker from '../components/RoutinePicker'
+import SaveRoutineForm from '../components/SaveRoutineForm'
 import Chip from '../components/Chip'
 
 type SheetState =
@@ -37,6 +55,7 @@ type SheetState =
       exercise: Exercise
       initial: EntryValues
       previous?: EntryValues & { date: string }
+      previousNote?: string
       /** 種目選択から開いた場合は「戻る」で選び直せる */
       fromPicker: boolean
     }
@@ -47,6 +66,9 @@ type SheetState =
       /** null = まとめて編集 / 数値 = そのセットだけ編集 */
       index: number | null
     }
+  | { kind: 'note'; exerciseId: number; title: string; initial: string; hint?: string }
+  | { kind: 'routines' }
+  | { kind: 'saveRoutine' }
 
 const UNKNOWN_EXERCISE = (id: number): Exercise => ({
   id,
@@ -81,31 +103,67 @@ export default function TodayPage() {
     setSheet({ kind: 'closed' })
     setDirty(false)
   }, [])
+  const open = (s: SheetState) => {
+    setDirty(false)
+    setSheet(s)
+  }
 
   const data = useLiveQuery(async () => {
-    const sets = await db.workoutSets.where('date').equals(date).toArray()
+    const [sets, plans, notes] = await Promise.all([
+      db.workoutSets.where('date').equals(date).toArray(),
+      db.plans.where('date').equals(date).sortBy('order'),
+      db.notes.where('date').equals(date).toArray(),
+    ])
     sets.sort(byInputOrder)
-    const exIds = [...new Set(sets.map((s) => s.exerciseId))]
+    // 予定の順番を優先し、予定にない種目は記録した順に後ろへ並べる
+    const exIds = [
+      ...new Set([...plans.map((p) => p.exerciseId), ...sets.map((s) => s.exerciseId)]),
+    ]
     const exercises = await db.exercises.bulkGet(exIds)
+    const noteOf = new Map(notes.map((n) => [n.exerciseId, n.text]))
     return {
       date,
+      dayNote: noteOf.get(DAY_NOTE),
       items: exIds.map((id, i) => ({
         exercise: exercises[i] ?? UNKNOWN_EXERCISE(id),
         sets: sets.filter((s) => s.exerciseId === id),
+        plan: plans.find((p) => p.exerciseId === id),
+        note: noteOf.get(id),
       })),
     }
   }, [date])
   // 日付を切り替えた直後に前の日のデータを表示しないようにする
-  const items = data?.date === date ? data.items : undefined
+  const current = data?.date === date ? data : undefined
+  const items = current?.items
+
+  // 何も記録していない日は「前回のメニューをコピー」を出す
+  const previous = useLiveQuery(async () => {
+    const prevDate = await previousWorkoutDate(date)
+    if (!prevDate) return null
+    const menu = await menuOfDay(prevDate)
+    const exercises = await db.exercises.bulkGet(menu.map((m) => m.exerciseId))
+    return { date: prevDate, menu, names: exercises.map((e) => e?.name ?? '?') }
+  }, [date])
+  const routineCount = useLiveQuery(() => db.routines.count(), [])
 
   const openAdd = async (exercise: Exercise, todaysSets: WorkoutSet[], fromPicker: boolean) => {
-    const previous = await lastSetOf(exercise.id, date)
-    const last = lastEntered(todaysSets) ?? previous
+    const [prev, prevNote] = await Promise.all([
+      lastSetOf(exercise.id, date),
+      previousNote(exercise.id, date),
+    ])
+    const plan = items?.find((it) => it.exercise.id === exercise.id)?.plan
+    const last = lastEntered(todaysSets) ?? plan ?? prev
     const initial = last
       ? { weight: last.weight, reps: last.reps, sets: 1 }
       : { weight: exercise.kind === 'bodyweight' ? 0 : 20, reps: 10, sets: 1 }
-    setDirty(false)
-    setSheet({ kind: 'add', exercise, initial, previous, fromPicker })
+    open({
+      kind: 'add',
+      exercise,
+      initial,
+      previous: prev,
+      previousNote: prevNote && `前回のメモ（${formatDate(prevNote.date)}）：${prevNote.text}`,
+      fromPicker,
+    })
   }
 
   const handleAdd = async (exercise: Exercise, v: EntryValues) => {
@@ -115,12 +173,6 @@ export default function TodayPage() {
     showUndoToast(`${exercise.name} ${describeSets(v, exercise.kind)}を記録しました`, async () => {
       await db.workoutSets.bulkDelete(ids)
     })
-  }
-
-  /** 直前と同じ内容で1セットを1タップで記録 */
-  const quickAdd = async (exercise: Exercise, last: WorkoutSet) => {
-    const v = { weight: last.weight, reps: last.reps, sets: 1 }
-    await handleAdd(exercise, v)
   }
 
   const handleEdit = async (exercise: Exercise, ids: number[], v: EntryValues) => {
@@ -135,8 +187,26 @@ export default function TodayPage() {
     showUndoToast(`${exercise.name} ${describeSets(v, exercise.kind)}を削除しました`, undo)
   }
 
+  const applyMenu = async (menu: MenuItem[], label: string) => {
+    const undo = await addPlan(date, menu)
+    close()
+    showUndoToast(`${label}を予定に追加しました`, undo)
+  }
+
+  const openNote = async (exerciseId: number, title: string, initial = '') => {
+    const prev = await previousNote(exerciseId, date)
+    open({
+      kind: 'note',
+      exerciseId,
+      title,
+      initial,
+      hint: prev && `前回のメモ（${formatDate(prev.date)}）：${prev.text}`,
+    })
+  }
+
   const allSets = items?.flatMap((d) => d.sets) ?? []
   const totalVolume = volume(allSets)
+  const hasItems = !!items && items.length > 0
 
   return (
     <>
@@ -176,7 +246,7 @@ export default function TodayPage() {
             <span className="text-right text-xs leading-tight text-muted">
               {allSets.length}セット
               <br />
-              <span className="tabular-nums">{fmt(totalVolume)}kg</span>
+              <span className="tabular-nums">{fmtVolume(totalVolume)}</span>
             </span>
           )
         }
@@ -199,8 +269,18 @@ export default function TodayPage() {
 
       {/* 下部の「種目を追加」ボタンや通知に最後のカードが隠れないよう余白をとる */}
       <main className="flex flex-col gap-3 px-4 pb-40">
+        {current?.dayNote && (
+          <button
+            onClick={() => openNote(DAY_NOTE, 'この日のメモ', current.dayNote)}
+            className="flex items-start gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-left"
+          >
+            <NotebookPen size={18} className="mt-0.5 shrink-0 text-accent" />
+            <span className="text-sm whitespace-pre-wrap">{current.dayNote}</span>
+          </button>
+        )}
+
         {items?.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center text-muted">
+          <div className="flex flex-col items-center gap-3 pt-10 pb-4 text-center text-muted">
             <Dumbbell size={48} strokeWidth={1.5} />
             <p>
               {isToday ? '今日' : formatDate(date)}のトレーニングはまだありません
@@ -210,76 +290,85 @@ export default function TodayPage() {
           </div>
         )}
 
-        {items?.map(({ exercise, sets }) => {
-          const last = lastEntered(sets)!
-          const bodyweight = exercise.kind === 'bodyweight'
-          return (
-            <section key={exercise.id} className="rounded-2xl border border-line bg-surface p-4">
-              <div className="mb-1 flex items-baseline justify-between gap-2">
-                <h2 className="font-bold">{exercise.name}</h2>
-                <span className="text-xs text-muted tabular-nums">
-                  {bodyweight
-                    ? `合計${sets.reduce((n, s) => n + s.reps, 0)}回`
-                    : `${fmt(volume(sets))}kg`}
-                </span>
-              </div>
-              <ul className="flex flex-col">
-                {groupSets(sets).map((g) => (
-                  <li key={g.ids[0]}>
-                    <button
-                      onClick={() => {
-                        setDirty(false)
-                        setSheet({ kind: 'edit', exercise, group: g, index: null })
-                      }}
-                      aria-label={`${describeSets({ weight: g.weight, reps: g.reps, sets: g.count }, exercise.kind)}を編集`}
-                      className="flex min-h-11 w-full items-baseline gap-1.5 rounded-lg px-2 py-1.5 text-left tabular-nums active:bg-surface-2"
-                    >
-                      {bodyweight ? (
-                        <span className="text-lg font-semibold">
-                          {formatLoad(g.weight, exercise.kind)}
-                        </span>
-                      ) : (
-                        <>
-                          <span className="text-lg font-semibold">{fmt(g.weight)}</span>
-                          <span className="text-sm text-muted">kg</span>
-                        </>
-                      )}
-                      <span className="text-sm text-muted">×</span>
-                      <span className="text-lg font-semibold">{g.reps}</span>
-                      <span className="text-sm text-muted">回 ×</span>
-                      <span className="text-lg font-semibold">{g.count}</span>
-                      <span className="text-sm text-muted">セット</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-2 flex gap-2">
-                <button
-                  onClick={() => quickAdd(exercise, last)}
-                  aria-label={`${formatLoad(last.weight, exercise.kind)}×${last.reps}回をもう1セット記録`}
-                  className="flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-xl bg-accent/15 px-3 font-bold text-ink active:bg-accent/30"
-                >
-                  <Plus size={18} strokeWidth={2.5} className="text-accent" />
-                  1セット
-                  <span className="text-sm font-medium text-ink-2 tabular-nums">
-                    {formatLoad(last.weight, exercise.kind)}×{last.reps}回
+        {items?.length === 0 && (previous || !!routineCount) && (
+          <div className="flex flex-col gap-2">
+            {previous && (
+              <button
+                onClick={() =>
+                  applyMenu(previous.menu, `前回（${formatDate(previous.date)}）のメニュー`)
+                }
+                className="flex items-start gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-left active:bg-surface-2"
+              >
+                <Copy size={20} className="mt-0.5 shrink-0 text-accent" />
+                <span className="min-w-0">
+                  <span className="block font-semibold">
+                    前回（{formatDate(previous.date)}）のメニューをコピー
                   </span>
-                </button>
-                <button
-                  onClick={() => openAdd(exercise, sets, false)}
-                  aria-label={`${exercise.name}の重量や回数を変えて追加`}
-                  className="flex min-h-12 shrink-0 items-center gap-1 rounded-xl bg-surface-2 px-3 text-sm font-medium text-ink-2 active:opacity-70"
-                >
-                  <SlidersHorizontal size={16} /> 変更
-                </button>
-              </div>
-            </section>
-          )
-        })}
+                  <span className="block truncate text-xs text-muted">
+                    {previous.names.join('・')}
+                  </span>
+                </span>
+              </button>
+            )}
+            {!!routineCount && (
+              <button
+                onClick={() => open({ kind: 'routines' })}
+                className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 text-left font-semibold active:bg-surface-2"
+              >
+                <ListChecks size={20} className="shrink-0 text-accent" />
+                ルーティンから始める
+              </button>
+            )}
+          </div>
+        )}
+
+        {items?.map(({ exercise, sets, plan, note }) => (
+          <ExerciseCard
+            key={exercise.id}
+            exercise={exercise}
+            sets={sets}
+            plan={plan}
+            note={note}
+            onQuickAdd={(v) => handleAdd(exercise, { ...v, sets: 1 })}
+            onAdd={() => openAdd(exercise, sets, false)}
+            onEdit={(group) => open({ kind: 'edit', exercise, group, index: null })}
+            onNote={() => openNote(exercise.id, `${exercise.name}のメモ`, note)}
+            onRemovePlan={async () => {
+              const undo = await removePlan(date, exercise.id)
+              showUndoToast(`${exercise.name}を予定から外しました`, undo)
+            }}
+          />
+        ))}
+
+        {items && (
+          <div className="flex flex-wrap gap-2">
+            {!current?.dayNote && (
+              <Chip onClick={() => openNote(DAY_NOTE, 'この日のメモ')}>
+                <span className="flex items-center gap-1.5">
+                  <NotebookPen size={16} /> この日のメモ
+                </span>
+              </Chip>
+            )}
+            {hasItems && !!routineCount && (
+              <Chip onClick={() => open({ kind: 'routines' })}>
+                <span className="flex items-center gap-1.5">
+                  <ListChecks size={16} /> ルーティンを追加
+                </span>
+              </Chip>
+            )}
+            {hasItems && (
+              <Chip onClick={() => open({ kind: 'saveRoutine' })}>
+                <span className="flex items-center gap-1.5">
+                  <BookmarkPlus size={16} /> ルーティンとして保存
+                </span>
+              </Chip>
+            )}
+          </div>
+        )}
       </main>
 
       <button
-        onClick={() => setSheet({ kind: 'pick' })}
+        onClick={() => open({ kind: 'pick' })}
         className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 flex items-center gap-2 rounded-full bg-accent px-6 py-4 font-bold text-accent-ink shadow-lg shadow-black/20 transition-transform active:scale-95 min-[32rem]:right-[calc(50%-15rem)]"
       >
         <Plus size={22} strokeWidth={2.5} /> 種目を追加
@@ -289,20 +378,19 @@ export default function TodayPage() {
         open={sheet.kind !== 'closed'}
         onClose={close}
         dismissible={!dirty}
-        onBack={
-          sheet.kind === 'add' && sheet.fromPicker
-            ? () => {
-                setDirty(false)
-                setSheet({ kind: 'pick' })
-              }
-            : undefined
-        }
+        onBack={sheet.kind === 'add' && sheet.fromPicker ? () => open({ kind: 'pick' }) : undefined}
         title={
           sheet.kind === 'pick'
             ? '種目を選択'
             : sheet.kind === 'add' || sheet.kind === 'edit'
               ? sheet.exercise.name
-              : ''
+              : sheet.kind === 'note'
+                ? sheet.title
+                : sheet.kind === 'routines'
+                  ? 'ルーティンを選択'
+                  : sheet.kind === 'saveRoutine'
+                    ? 'ルーティンとして保存'
+                    : ''
         }
       >
         {sheet.kind === 'pick' && (
@@ -319,6 +407,13 @@ export default function TodayPage() {
             step={sheet.exercise.step}
             initial={sheet.initial}
             previous={sheet.previous}
+            header={
+              sheet.previousNote && (
+                <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm whitespace-pre-wrap text-ink-2">
+                  {sheet.previousNote}
+                </p>
+              )
+            }
             submitLabel="記録する"
             onDirtyChange={setDirty}
             onSubmit={(v) => handleAdd(sheet.exercise, v)}
@@ -333,8 +428,71 @@ export default function TodayPage() {
             onDelete={handleDelete}
           />
         )}
+        {sheet.kind === 'note' && (
+          <NoteForm
+            initial={sheet.initial}
+            hint={sheet.hint}
+            placeholder={
+              sheet.exerciseId === DAY_NOTE
+                ? '体調やトレーニング全体の感想など'
+                : 'フォームの注意点、次回の目標など'
+            }
+            onDirtyChange={setDirty}
+            onSave={async (text) => {
+              await saveNote(date, sheet.exerciseId, text)
+              close()
+              showToast(text.trim() ? 'メモを保存しました' : 'メモを削除しました', {
+                duration: 2000,
+              })
+            }}
+          />
+        )}
+        {sheet.kind === 'routines' && (
+          <RoutinePicker onSelect={(r: Routine) => applyMenu(r.items, `ルーティン「${r.name}」`)} />
+        )}
+        {sheet.kind === 'saveRoutine' && items && <SaveRoutineSheet date={date} onDone={close} />}
       </Sheet>
     </>
+  )
+}
+
+/** その日のメニュー (記録＋予定) をルーティンとして保存する */
+function SaveRoutineSheet({ date, onDone }: { date: string; onDone: () => void }) {
+  const data = useLiveQuery(async () => {
+    const menu = await menuOfDay(date)
+    const exercises = await db.exercises.bulkGet(menu.map((m) => m.exerciseId))
+    const categories = [...new Set(exercises.map((e) => e?.category).filter(Boolean))]
+    return {
+      items: menu.map((m, i) => ({
+        ...m,
+        name: exercises[i]?.name ?? '(削除された種目)',
+        kind: exercises[i]?.kind ?? ('weighted' as const),
+      })),
+      // 部位から名前の候補を作る (例:「胸・背中の日」)
+      defaultName: categories.length
+        ? `${categories.join('・')}の日`
+        : `${formatDate(date)}のメニュー`,
+    }
+  }, [date])
+  if (!data) return null
+  return (
+    <SaveRoutineForm
+      items={data.items}
+      defaultName={data.defaultName}
+      onSave={async (name) => {
+        await saveRoutine(
+          name,
+          data.items.map(({ exerciseId, weight, reps, sets }) => ({
+            exerciseId,
+            weight,
+            reps,
+            sets,
+          })),
+        )
+        onDone()
+        showToast(`ルーティン「${name}」を保存しました`, { duration: 2500 })
+      }}
+    />
   )
 }
 

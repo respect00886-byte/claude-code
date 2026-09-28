@@ -5,7 +5,9 @@ import { db, deleteBodyWeight, saveBodyWeight, type BodyWeight } from '../db/db'
 import { addDays, formatDate } from '../lib/date'
 import { useToday } from '../lib/useToday'
 import { showUndoToast } from '../lib/toast'
-import { fmt } from '../lib/stats'
+import { fmt, fmtWeight } from '../lib/stats'
+import { getSettings } from '../lib/settings'
+import { fromUnit, toUnit } from '../lib/units'
 import PageHeader from '../components/PageHeader'
 import Stepper from '../components/Stepper'
 import TrendChart from '../components/TrendChart'
@@ -27,6 +29,7 @@ export default function WeightPage() {
 function WeightView({ records }: { records: BodyWeight[] }) {
   // 日付をまたいでも「今日」が自動で切り替わる
   const today = useToday()
+  const unit = getSettings().unit
   const todays = records.find((r) => r.date === today)
   const latest = records.at(-1)
 
@@ -43,7 +46,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
   const from = Number.isFinite(days) ? addDays(today, -days) : ''
   const chartData = records
     .filter((r) => r.date >= from)
-    .map((r) => ({ date: r.date, value: r.weight }))
+    .map((r) => ({ date: r.date, value: Math.round(toUnit(r.weight, unit) * 10) / 10 }))
 
   const first = chartData[0]?.value
   const last = chartData.at(-1)?.value
@@ -93,10 +96,10 @@ function WeightView({ records }: { records: BodyWeight[] }) {
           </div>
           <Stepper
             label="体重"
-            unit="kg"
-            value={weight}
-            onChange={setWeight}
-            step={0.1}
+            unit={unit}
+            value={Math.round(toUnit(weight, unit) * 10) / 10}
+            onChange={(v) => setWeight(fromUnit(v, unit))}
+            step={unit === 'lb' ? 0.2 : 0.1}
             decimals={1}
           />
           {bodyFat === undefined ? (
@@ -137,7 +140,8 @@ function WeightView({ records }: { records: BodyWeight[] }) {
             {diff !== undefined && chartData.length > 1 && (
               <span className="text-sm text-muted tabular-nums">
                 期間内 {diff > 0 ? '+' : ''}
-                {fmt(Math.round(diff * 10) / 10)}kg
+                {fmt(Math.round(toUnit(diff, unit) * 10) / 10)}
+                {unit}
               </span>
             )}
           </div>
@@ -148,7 +152,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
               </Chip>
             ))}
           </div>
-          <TrendChart data={chartData} unit="kg" label="体重" />
+          <TrendChart data={chartData} unit={unit} label="体重" />
         </section>
 
         {records.length > 0 && (
@@ -162,7 +166,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
                   <li key={r.id} className="flex items-center gap-3 py-2 tabular-nums">
                     <span className="w-24 text-sm text-muted">{formatDate(r.date)}</span>
                     <span className="flex-1 font-semibold">
-                      {fmt(r.weight)} kg
+                      {fmtWeight(r.weight)}
                       {r.bodyFat !== undefined && (
                         <span className="ml-2 text-sm font-normal text-muted">
                           {fmt(r.bodyFat)}%

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import type { ExerciseKind } from '../db/db'
-import { describeSets, fmt } from '../lib/stats'
+import { describeSets, fmtVolume } from '../lib/stats'
+import { getSettings } from '../lib/settings'
+import { displayWeight, fromUnit, stepInUnit } from '../lib/units'
 import { formatDate } from '../lib/date'
 import Stepper from './Stepper'
 
@@ -69,6 +71,8 @@ export default function EntryForm({
   }
 
   const bodyweight = kind === 'bodyweight'
+  // 入力は設定中の単位 (kg / lb)、保存は kg
+  const unit = getSettings().unit
 
   return (
     <div className="flex flex-col gap-5">
@@ -81,10 +85,10 @@ export default function EntryForm({
       )}
       <Stepper
         label={bodyweight ? '加重（自重のみは0）' : '重量'}
-        unit="kg"
-        value={weight}
-        onChange={(v) => change({ ...values, weight: v })}
-        step={step}
+        unit={unit}
+        value={displayWeight(weight, unit)}
+        onChange={(v) => change({ ...values, weight: fromUnit(v, unit) })}
+        step={stepInUnit(step, unit)}
         decimals={2}
       />
       <Stepper
@@ -115,7 +119,7 @@ export default function EntryForm({
           <>
             合計ボリューム{' '}
             <span className="font-semibold text-ink tabular-nums">
-              {fmt(weight * reps * sets)} kg
+              {fmtVolume(weight * reps * sets, unit)}
             </span>
           </>
         )}

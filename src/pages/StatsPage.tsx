@@ -3,7 +3,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ChartLine, Trophy } from 'lucide-react'
 import { db } from '../db/db'
 import { formatDate } from '../lib/date'
-import { dailyStats, fmt, personalBest } from '../lib/stats'
+import { dailyStats, fmtWeight, personalBest } from '../lib/stats'
+import { getSettings } from '../lib/settings'
+import { displayWeight, toUnit } from '../lib/units'
 import PageHeader from '../components/PageHeader'
 import TrendChart from '../components/TrendChart'
 import Chip from '../components/Chip'
@@ -12,20 +14,21 @@ type MetricKey = 'maxWeight' | 'est1RM' | 'volume' | 'maxReps' | 'totalReps'
 interface Metric {
   key: MetricKey
   label: string
-  unit: string
+  /** 'weight' は設定中の単位 (kg / lb) で表示 */
+  unit: 'weight' | '回'
 }
 
 const WEIGHTED_METRICS: Metric[] = [
-  { key: 'maxWeight', label: '最大重量', unit: 'kg' },
-  { key: 'est1RM', label: '推定1RM', unit: 'kg' },
-  { key: 'volume', label: 'ボリューム', unit: 'kg' },
+  { key: 'maxWeight', label: '最大重量', unit: 'weight' },
+  { key: 'est1RM', label: '推定1RM', unit: 'weight' },
+  { key: 'volume', label: 'ボリューム', unit: 'weight' },
 ]
 
 /** 自重種目は回数が主な指標 */
 const BODYWEIGHT_METRICS: Metric[] = [
   { key: 'maxReps', label: '最大回数', unit: '回' },
   { key: 'totalReps', label: '合計回数', unit: '回' },
-  { key: 'maxWeight', label: '最大加重', unit: 'kg' },
+  { key: 'maxWeight', label: '最大加重', unit: 'weight' },
 ]
 
 export default function StatsPage() {
@@ -91,7 +94,7 @@ export default function StatsPage() {
                     />
                     <Tile
                       label="最大加重"
-                      value={pb.maxWeight > 0 ? `+${fmt(pb.maxWeight)}kg` : '自重のみ'}
+                      value={pb.maxWeight > 0 ? `+${fmtWeight(pb.maxWeight)}` : '自重のみ'}
                       sub={pb.maxWeight > 0 ? formatDate(pb.maxWeightDate) : '—'}
                     />
                   </>
@@ -99,12 +102,12 @@ export default function StatsPage() {
                   <>
                     <Tile
                       label="最大重量"
-                      value={`${fmt(pb.maxWeight)}kg`}
+                      value={fmtWeight(pb.maxWeight)}
                       sub={formatDate(pb.maxWeightDate)}
                     />
                     <Tile
                       label="推定1RM"
-                      value={`${fmt(pb.best1RM)}kg`}
+                      value={fmtWeight(pb.best1RM)}
                       sub={formatDate(pb.best1RMDate)}
                     />
                   </>
@@ -126,8 +129,16 @@ export default function StatsPage() {
                 ))}
               </div>
               <TrendChart
-                data={stats.map((s) => ({ date: s.date, value: s[m.key] }))}
-                unit={m.unit}
+                data={stats.map((s) => ({
+                  date: s.date,
+                  value:
+                    m.key === 'volume'
+                      ? Math.round(toUnit(s.volume))
+                      : m.unit === 'weight'
+                        ? displayWeight(s[m.key])
+                        : s[m.key],
+                }))}
+                unit={m.unit === 'weight' ? getSettings().unit : m.unit}
                 label={m.label}
               />
             </section>

@@ -10,6 +10,15 @@ import {
   type ExerciseKind,
 } from '../db/db'
 import { fmt } from '../lib/stats'
+import { getSettings, updateSettings, useSettings } from '../lib/settings'
+import RoutineManager from '../components/RoutineManager'
+import { stepInUnit } from '../lib/units'
+
+/** 重量の刻み (kg で保存) を設定中の単位で表示 */
+const fmtStep = (kgStep: number) => {
+  const unit = getSettings().unit
+  return `${fmt(stepInUnit(kgStep, unit))}${unit}`
+}
 import { exportData, importData, parseBackup, saveJsonFile } from '../lib/backup'
 import { formatDate, toDateKey } from '../lib/date'
 import {
@@ -32,6 +41,7 @@ export default function SettingsPage() {
     sets: await db.workoutSets.count(),
     weights: await db.bodyWeights.count(),
   }))
+  const { unit } = useSettings()
   const [editing, setEditing] = useState<Editing>({ kind: 'closed' })
   const [message, setMessage] = useState<Message>()
   const [lastBackup, setLastBackup] = useState(getLastBackupAt)
@@ -146,6 +156,22 @@ export default function SettingsPage() {
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4">
+          <h2 className="font-bold">重量の単位</h2>
+          <p className="mt-1 mb-3 text-sm text-muted">
+            記録は kg で保存しているので、切り替えても記録そのものは変わりません。
+          </p>
+          <div className="flex gap-2">
+            {(['kg', 'lb'] as const).map((u) => (
+              <Chip key={u} active={unit === u} onClick={() => updateSettings({ unit: u })}>
+                {u === 'kg' ? 'kg（キログラム）' : 'lb（ポンド）'}
+              </Chip>
+            ))}
+          </div>
+        </section>
+
+        <RoutineManager />
+
+        <section className="rounded-2xl border border-line bg-surface p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="font-bold">種目の管理</h2>
             <button
@@ -169,7 +195,7 @@ export default function SettingsPage() {
                       >
                         {e.name}
                         <span className="block text-xs text-muted">
-                          {e.kind === 'bodyweight' ? '自重' : `${fmt(e.step)}kg刻み`}
+                          {e.kind === 'bodyweight' ? '自重' : `${fmtStep(e.step)}刻み`}
                         </span>
                       </span>
                       <button
@@ -282,12 +308,12 @@ function ExerciseForm({
         <div className="flex flex-wrap gap-2">
           {WEIGHT_STEPS.map((v) => (
             <Chip key={v} active={step === v} onClick={() => setStep(v)}>
-              {fmt(v)}kg
+              {fmtStep(v)}
             </Chip>
           ))}
         </div>
         <p className="mt-1.5 text-xs text-muted">
-          目安：バーベル 2.5kg / ダンベル 1〜2kg / マシン 5kg
+          目安：バーベル {fmtStep(2.5)} / ダンベル {fmtStep(1)}〜{fmtStep(2)} / マシン {fmtStep(5)}
         </p>
       </fieldset>
       <button

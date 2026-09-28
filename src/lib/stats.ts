@@ -1,4 +1,6 @@
 import type { ExerciseKind, WorkoutSet } from '../db/db'
+import { getSettings, type WeightUnit } from './settings'
+import { displayWeight, toUnit } from './units'
 
 /** Epley 式による推定 1RM */
 export function estimate1RM(weight: number, reps: number): number {
@@ -102,10 +104,24 @@ export function fmt(n: number): string {
   return n.toLocaleString('ja-JP', { maximumFractionDigits: 2 })
 }
 
+/** 重量 (kg で保存) を設定中の単位で「60kg」「132.28lb」のように表示 */
+export function fmtWeight(kg: number, unit: WeightUnit = getSettings().unit): string {
+  return `${fmt(displayWeight(kg, unit))}${unit}`
+}
+
+/** 総ボリューム (重量×回数の合計) は整数で表示 */
+export function fmtVolume(kg: number, unit: WeightUnit = getSettings().unit): string {
+  return `${fmt(Math.round(toUnit(kg, unit)))}${unit}`
+}
+
 /** 重量の表示。自重種目は「自重」「自重+10kg」 */
-export function formatLoad(weight: number, kind: ExerciseKind = 'weighted'): string {
-  if (kind === 'bodyweight') return weight > 0 ? `自重+${fmt(weight)}kg` : '自重'
-  return `${fmt(weight)}kg`
+export function formatLoad(
+  weight: number,
+  kind: ExerciseKind = 'weighted',
+  unit: WeightUnit = getSettings().unit,
+): string {
+  if (kind === 'bodyweight') return weight > 0 ? `自重+${fmtWeight(weight, unit)}` : '自重'
+  return fmtWeight(weight, unit)
 }
 
 /** 「60kg×10回×3セット」形式 */

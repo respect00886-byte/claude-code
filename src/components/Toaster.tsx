@@ -8,7 +8,7 @@ export default function Toaster() {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(10rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(10rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4"
     >
       <div
         key={toast.id}

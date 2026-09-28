@@ -1,4 +1,6 @@
+import { Fragment } from 'react'
 import { createHashRouter, Outlet, RouterProvider } from 'react-router'
+import { useSettings } from './lib/settings'
 import BottomNav from './components/BottomNav'
 import Toaster from './components/Toaster'
 import UpdatePrompt from './components/UpdatePrompt'
@@ -7,9 +9,13 @@ import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
 
 function Layout() {
+  const { unit } = useSettings()
   return (
     <div className="mx-auto min-h-dvh max-w-lg pb-[calc(5rem+env(safe-area-inset-bottom))]">
-      <Outlet />
+      {/* kg / lb を切り替えたら画面を描き直す */}
+      <Fragment key={unit}>
+        <Outlet />
+      </Fragment>
       <BottomNav />
       <Toaster />
       <UpdatePrompt />
