@@ -1,14 +1,6 @@
 import { Check, NotebookPen, Plus, SlidersHorizontal, X } from 'lucide-react'
 import type { Exercise, MenuItem, WorkoutSet } from '../db/db'
-import {
-  describeSets,
-  fmt,
-  fmtVolume,
-  formatLoad,
-  groupSets,
-  volume,
-  type SetGroup,
-} from '../lib/stats'
+import { describeSets, fmt, formatLoad, groupSets, type SetGroup } from '../lib/stats'
 import { getSettings } from '../lib/settings'
 import { displayWeight } from '../lib/units'
 
@@ -52,11 +44,6 @@ export default function ExerciseCard({
     >
       <div className="flex items-start gap-2">
         <h2 className="min-w-0 flex-1 pt-2 font-bold">{exercise.name}</h2>
-        {done > 0 && (
-          <span className="pt-2.5 text-xs text-muted tabular-nums">
-            {bodyweight ? `合計${sets.reduce((n, s) => n + s.reps, 0)}回` : fmtVolume(volume(sets))}
-          </span>
-        )}
         <button
           onClick={onNote}
           aria-label={`${exercise.name}のメモ`}

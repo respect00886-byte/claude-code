@@ -1,4 +1,10 @@
-import type { ExerciseKind, WorkoutSet } from '../db/db'
+import {
+  CATEGORIES,
+  type Category,
+  type Exercise,
+  type ExerciseKind,
+  type WorkoutSet,
+} from '../db/db'
 import { getSettings, type WeightUnit } from './settings'
 import { displayWeight, toUnit } from './units'
 
@@ -130,4 +136,53 @@ export function describeSets(
   kind: ExerciseKind = 'weighted',
 ): string {
   return `${formatLoad(v.weight, kind)}×${v.reps}回×${v.sets}セット`
+}
+
+export interface CategoryVolume {
+  category: Category
+  /** 重量×回数の合計 (kg) */
+  volume: number
+  /** 自重種目の回数の合計 (加重なしの自重はボリュームに入らないため別に数える) */
+  bodyweightReps: number
+  sets: number
+}
+
+type ExerciseLookup = Map<number, Pick<Exercise, 'category' | 'kind'>>
+
+/** 部位ごとのボリューム。部位の並びは CATEGORIES の順 */
+export function volumeByCategory(sets: WorkoutSet[], exercises: ExerciseLookup): CategoryVolume[] {
+  const byCat = new Map<Category, CategoryVolume>()
+  for (const s of sets) {
+    const ex = exercises.get(s.exerciseId)
+    const category = ex?.category ?? 'その他'
+    const row = byCat.get(category) ?? { category, volume: 0, bodyweightReps: 0, sets: 0 }
+    row.volume += s.weight * s.reps
+    if (ex?.kind === 'bodyweight') row.bodyweightReps += s.reps
+    row.sets++
+    byCat.set(category, row)
+  }
+  return CATEGORIES.flatMap((c) => byCat.get(c) ?? [])
+}
+
+export interface CategoryDailyStat {
+  date: string
+  volume: number
+  sets: number
+}
+
+/** 指定した部位の日ごとのボリュームとセット数 (日付順) */
+export function categoryDailyStats(
+  sets: WorkoutSet[],
+  exercises: ExerciseLookup,
+  category: Category,
+): CategoryDailyStat[] {
+  const byDate = new Map<string, CategoryDailyStat>()
+  for (const s of sets) {
+    if ((exercises.get(s.exerciseId)?.category ?? 'その他') !== category) continue
+    const row = byDate.get(s.date) ?? { date: s.date, volume: 0, sets: 0 }
+    row.volume += s.weight * s.reps
+    row.sets++
+    byDate.set(s.date, row)
+  }
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
 }

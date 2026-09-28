@@ -36,12 +36,20 @@ import {
 import { addDays, formatDate, isDateKey } from '../lib/date'
 import { useToday } from '../lib/useToday'
 import { showToast, showUndoToast } from '../lib/toast'
-import { byInputOrder, describeSets, fmtVolume, volume, type SetGroup } from '../lib/stats'
+import {
+  byInputOrder,
+  describeSets,
+  fmtVolume,
+  volume,
+  volumeByCategory,
+  type SetGroup,
+} from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
 import ExercisePicker from '../components/ExercisePicker'
 import EntryForm, { type EntryValues } from '../components/EntryForm'
 import ExerciseCard from '../components/ExerciseCard'
+import CategoryVolume from '../components/CategoryVolume'
 import NoteForm from '../components/NoteForm'
 import RoutinePicker from '../components/RoutinePicker'
 import SaveRoutineForm from '../components/SaveRoutineForm'
@@ -206,6 +214,10 @@ export default function TodayPage() {
 
   const allSets = items?.flatMap((d) => d.sets) ?? []
   const totalVolume = volume(allSets)
+  const categoryRows = volumeByCategory(
+    allSets,
+    new Map(items?.map((it) => [it.exercise.id, it.exercise])),
+  )
   const hasItems = !!items && items.length > 0
 
   return (
@@ -269,6 +281,8 @@ export default function TodayPage() {
 
       {/* 下部の「種目を追加」ボタンや通知に最後のカードが隠れないよう余白をとる */}
       <main className="flex flex-col gap-3 px-4 pb-40">
+        <CategoryVolume rows={categoryRows} />
+
         {current?.dayNote && (
           <button
             onClick={() => openNote(DAY_NOTE, 'この日のメモ', current.dayNote)}
