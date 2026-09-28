@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import type { ExerciseKind } from '../db/db'
-import { describeSets, fmtVolume } from '../lib/stats'
-import { getSettings } from '../lib/settings'
+import { describeSets, fmtVolume, fmtWeight } from '../lib/stats'
+import { getSettings, type WeightUnit } from '../lib/settings'
 import { displayWeight, fromUnit, stepInUnit } from '../lib/units'
 import { formatDate } from '../lib/date'
 import Stepper from './Stepper'
@@ -17,6 +17,10 @@ interface Props {
   kind: ExerciseKind
   /** 重量の刻み (kg) */
   step: number
+  /** 重量を入力する単位 (種目ごとの設定)。未設定なら表示の単位。表示は設定画面の単位 */
+  inputUnit?: WeightUnit
+  /** 入力単位を切り替えたとき (種目の設定として保存する) */
+  onInputUnitChange?: (unit: WeightUnit) => void
   /** 前回の記録 (表示用) */
   previous?: EntryValues & { date: string }
   /** true のときセット数は 1 に固定 (1セットだけ編集する場合) */
@@ -35,6 +39,8 @@ export default function EntryForm({
   initial,
   kind,
   step,
+  inputUnit,
+  onInputUnitChange,
   previous,
   singleSet,
   header,
@@ -71,8 +77,10 @@ export default function EntryForm({
   }
 
   const bodyweight = kind === 'bodyweight'
-  // 入力は設定中の単位 (kg / lb)、保存は kg
+  // 表示は設定画面の単位、入力は種目ごとの単位 (lb 表記のマシン用)。保存は常に kg
   const unit = getSettings().unit
+  // 種目で決めていなければ表示と同じ単位で入力する
+  const [inUnit, setInUnit] = useState<WeightUnit>(inputUnit ?? unit)
 
   return (
     <div className="flex flex-col gap-5">
@@ -83,14 +91,48 @@ export default function EntryForm({
           <span className="font-semibold text-ink">{describeSets(previous, kind)}</span>
         </p>
       )}
-      <Stepper
-        label={bodyweight ? '加重（自重のみは0）' : '重量'}
-        unit={unit}
-        value={displayWeight(weight, unit)}
-        onChange={(v) => change({ ...values, weight: fromUnit(v, unit) })}
-        step={stepInUnit(step, unit)}
-        decimals={2}
-      />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-xs text-muted">入力単位</span>
+          <div
+            role="radiogroup"
+            aria-label="重量の入力単位"
+            className="flex rounded-lg bg-surface-2 p-0.5"
+          >
+            {(['kg', 'lb'] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                role="radio"
+                aria-checked={inUnit === u}
+                onClick={() => {
+                  setInUnit(u)
+                  onInputUnitChange?.(u)
+                }}
+                className={`min-h-11 min-w-14 rounded-md px-3 text-sm font-semibold ${
+                  inUnit === u ? 'bg-surface text-ink shadow-sm' : 'text-muted'
+                }`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Stepper
+          key={inUnit}
+          label={bodyweight ? '加重（自重のみは0）' : '重量'}
+          unit={inUnit}
+          value={displayWeight(weight, inUnit)}
+          onChange={(v) => change({ ...values, weight: fromUnit(v, inUnit) })}
+          step={stepInUnit(step, inUnit)}
+          decimals={2}
+        />
+        {inUnit !== unit && (
+          <p aria-live="polite" className="text-center text-sm text-muted tabular-nums">
+            ＝ <span className="font-semibold text-ink">{fmtWeight(weight, unit)}</span>
+          </p>
+        )}
+      </div>
       <Stepper
         label="回数"
         unit="回"

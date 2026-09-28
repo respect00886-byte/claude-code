@@ -35,6 +35,7 @@ import {
 } from '../db/menu'
 import { addDays, formatDate, isDateKey } from '../lib/date'
 import { useToday } from '../lib/useToday'
+import type { WeightUnit } from '../lib/settings'
 import { showToast, showUndoToast } from '../lib/toast'
 import {
   byInputOrder,
@@ -91,6 +92,10 @@ const UNKNOWN_EXERCISE = (id: number): Exercise => ({
 /** その日の最後に入力したセット */
 const lastEntered = (sets: WorkoutSet[]) =>
   sets.reduce<WorkoutSet | undefined>((a, b) => (!a || b.id > a.id ? b : a), undefined)
+
+/** 種目の重量の入力単位を覚えておく (lb 表記のマシンなど) */
+const setInputUnit = (exerciseId: number, inputUnit: WeightUnit) =>
+  db.exercises.update(exerciseId, { inputUnit })
 
 /** 軽い振動で記録できたことを伝える (対応端末のみ) */
 const haptic = () => navigator.vibrate?.(10)
@@ -419,6 +424,8 @@ export default function TodayPage() {
             key={`add-${sheet.exercise.id}`}
             kind={sheet.exercise.kind}
             step={sheet.exercise.step}
+            inputUnit={sheet.exercise.inputUnit}
+            onInputUnitChange={(u) => setInputUnit(sheet.exercise.id, u)}
             initial={sheet.initial}
             previous={sheet.previous}
             header={
@@ -560,6 +567,8 @@ function EditGroup({ sheet, onChange, onDirtyChange, onSubmit, onDelete }: EditG
       key={`edit-${group.ids[0]}-${index}`}
       kind={exercise.kind}
       step={exercise.step}
+      inputUnit={exercise.inputUnit}
+      onInputUnitChange={(u) => setInputUnit(exercise.id, u)}
       initial={initial}
       singleSet={index !== null}
       header={header}
