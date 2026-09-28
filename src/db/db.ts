@@ -64,7 +64,59 @@ export async function addSets(
   createdAt = Date.now(),
 ) {
   const rows = Array.from({ length: sets }, () => ({ date, exerciseId, weight, reps, createdAt }))
-  await database.workoutSets.bulkAdd(rows as WorkoutSet[])
+  return database.workoutSets.bulkAdd(rows as WorkoutSet[], { allKeys: true })
+}
+
+/** 取り消し用: 元に戻す処理 */
+export type Undo = () => Promise<void>
+
+/** 記録済みのセットを削除し、元に戻す関数を返す */
+export async function deleteSets(ids: number[], database: GymDB = db): Promise<Undo> {
+  const before = (await database.workoutSets.bulkGet(ids)).filter((s) => s !== undefined)
+  await database.workoutSets.bulkDelete(ids)
+  return async () => {
+    await database.workoutSets.bulkPut(before)
+  }
+}
+
+/**
+ * まとめて表示しているセット (同じ重量×回数) を編集する。
+ * セット数が増えた分は同じ位置に追加し、減った分は後ろから削除する。
+ */
+export async function updateSetGroup(
+  ids: number[],
+  values: { weight: number; reps: number; sets: number },
+  database: GymDB = db,
+): Promise<Undo> {
+  return database.transaction('rw', database.workoutSets, async () => {
+    const before = (await database.workoutSets.bulkGet(ids)).filter((s) => s !== undefined)
+    if (before.length === 0) return async () => {}
+    const first = before[0]
+    const keep = ids.slice(0, values.sets)
+    await database.workoutSets.bulkUpdate(
+      keep.map((id) => ({ key: id, changes: { weight: values.weight, reps: values.reps } })),
+    )
+    await database.workoutSets.bulkDelete(ids.slice(values.sets))
+    let added: number[] = []
+    if (values.sets > ids.length) {
+      // 元のグループと同じ位置に並ぶよう createdAt を揃える
+      added = await addSets(
+        first.date,
+        first.exerciseId,
+        values.weight,
+        values.reps,
+        values.sets - ids.length,
+        database,
+        first.createdAt,
+      )
+    }
+    return async () => {
+      await database.transaction('rw', database.workoutSets, async () => {
+        await database.workoutSets.bulkDelete(added)
+        await database.workoutSets.bulkPut(before)
+      })
+    }
+  })
 }
 
 /** 指定種目の直近の記録 (最後に追加したセット) */
@@ -87,10 +139,21 @@ export async function saveBodyWeight(
   bodyFat?: number,
   database: GymDB = db,
 ) {
-  const existing = await database.bodyWeights.where('date').equals(date).first()
-  if (existing) {
-    await database.bodyWeights.update(existing.id, { weight, bodyFat })
-  } else {
-    await database.bodyWeights.add({ date, weight, bodyFat } as BodyWeight)
+  await database.transaction('rw', database.bodyWeights, async () => {
+    const existing = await database.bodyWeights.where('date').equals(date).first()
+    if (existing) {
+      await database.bodyWeights.update(existing.id, { weight, bodyFat })
+    } else {
+      await database.bodyWeights.add({ date, weight, bodyFat } as BodyWeight)
+    }
+  })
+}
+
+/** 体重の記録を削除し、元に戻す関数を返す */
+export async function deleteBodyWeight(id: number, database: GymDB = db): Promise<Undo> {
+  const before = await database.bodyWeights.get(id)
+  await database.bodyWeights.delete(id)
+  return async () => {
+    if (before) await database.bodyWeights.put(before)
   }
 }

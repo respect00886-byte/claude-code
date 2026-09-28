@@ -1,5 +1,7 @@
 import { createHashRouter, Outlet, RouterProvider } from 'react-router'
 import BottomNav from './components/BottomNav'
+import Toaster from './components/Toaster'
+import UpdatePrompt from './components/UpdatePrompt'
 import TodayPage from './pages/TodayPage'
 import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
@@ -9,6 +11,8 @@ function Layout() {
     <div className="mx-auto min-h-dvh max-w-lg pb-[calc(5rem+env(safe-area-inset-bottom))]">
       <Outlet />
       <BottomNav />
+      <Toaster />
+      <UpdatePrompt />
     </div>
   )
 }

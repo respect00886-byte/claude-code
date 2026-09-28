@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, Trash2 } from 'lucide-react'
-import { db, saveBodyWeight, type BodyWeight } from '../db/db'
-import { addDays, formatDate, toDateKey } from '../lib/date'
+import { db, deleteBodyWeight, saveBodyWeight, type BodyWeight } from '../db/db'
+import { addDays, formatDate } from '../lib/date'
+import { useToday } from '../lib/useToday'
+import { showUndoToast } from '../lib/toast'
 import { fmt } from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 import Stepper from '../components/Stepper'
@@ -23,14 +25,18 @@ export default function WeightPage() {
 }
 
 function WeightView({ records }: { records: BodyWeight[] }) {
-  const today = toDateKey()
+  // 日付をまたいでも「今日」が自動で切り替わる
+  const today = useToday()
   const todays = records.find((r) => r.date === today)
   const latest = records.at(-1)
 
-  const [date, setDate] = useState(today)
+  // 日付を選んでいなければ常に「今日」に記録する
+  const [pickedDate, setPickedDate] = useState<string>()
+  const date = pickedDate ?? today
   const [weight, setWeight] = useState(todays?.weight ?? latest?.weight ?? 60)
   const [bodyFat, setBodyFat] = useState<number | undefined>(todays?.bodyFat ?? latest?.bodyFat)
   const [saved, setSaved] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [range, setRange] = useState<(typeof RANGES)[number]['key']>('1m')
 
   const days = RANGES.find((r) => r.key === range)!.days
@@ -44,9 +50,21 @@ function WeightView({ records }: { records: BodyWeight[] }) {
   const diff = first !== undefined && last !== undefined ? last - first : undefined
 
   const save = async () => {
-    await saveBodyWeight(date, weight, bodyFat)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
+    // 二重タップ防止
+    if (busy) return
+    setBusy(true)
+    try {
+      await saveBodyWeight(date, weight, bodyFat)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async (r: BodyWeight) => {
+    const undo = await deleteBodyWeight(r.id)
+    showUndoToast(`${formatDate(r.date)}の体重記録を削除しました`, undo)
   }
 
   return (
@@ -63,7 +81,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
               onChange={(e) => {
                 const d = e.target.value
                 if (!d) return
-                setDate(d)
+                setPickedDate(d === today ? undefined : d)
                 const rec = records.find((r) => r.date === d)
                 if (rec) {
                   setWeight(rec.weight)
@@ -98,7 +116,8 @@ function WeightView({ records }: { records: BodyWeight[] }) {
           )}
           <button
             onClick={save}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-lg font-bold text-accent-ink active:opacity-80"
+            disabled={busy}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-accent py-4 text-lg font-bold text-accent-ink active:opacity-80 disabled:opacity-50"
           >
             {saved ? (
               <>
@@ -152,9 +171,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
                     </span>
                     <button
                       aria-label={`${formatDate(r.date)}の記録を削除`}
-                      onClick={() =>
-                        confirm('この記録を削除しますか？') && db.bodyWeights.delete(r.id)
-                      }
+                      onClick={() => remove(r)}
                       className="rounded-full p-2 text-muted active:bg-surface-2"
                     >
                       <Trash2 size={16} />

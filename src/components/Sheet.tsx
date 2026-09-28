@@ -5,26 +5,31 @@ interface Props {
   open: boolean
   title: ReactNode
   onClose: () => void
+  /** false のとき、背景タップや Esc では閉じない (入力途中の誤操作防止)。× ボタンでは閉じる */
+  dismissible?: boolean
   children: ReactNode
 }
 
 /** 画面下からせり上がるボトムシート */
-export default function Sheet({ open, title, onClose, children }: Props) {
+export default function Sheet({ open, title, onClose, dismissible = true, children }: Props) {
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && dismissible && onClose()
     window.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
-  }, [open, onClose])
+  }, [open, onClose, dismissible])
 
   if (!open) return null
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center">
-      <div className="animate-fade absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        className="animate-fade absolute inset-0 bg-black/50"
+        onClick={() => dismissible && onClose()}
+      />
       <div
         role="dialog"
         aria-modal="true"

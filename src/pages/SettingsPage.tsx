@@ -1,14 +1,22 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Download, Eye, EyeOff, Pencil, Plus, Upload } from 'lucide-react'
+import { Download, Eye, EyeOff, Pencil, Plus, ShieldAlert, ShieldCheck, Upload } from 'lucide-react'
 import { CATEGORIES, db, type Category, type Exercise } from '../db/db'
-import { downloadJson, exportData, importData, parseBackup } from '../lib/backup'
-import { toDateKey } from '../lib/date'
+import { exportData, importData, parseBackup, saveJsonFile } from '../lib/backup'
+import { formatDate, toDateKey } from '../lib/date'
+import {
+  getLastBackupAt,
+  isIOS,
+  isStandalone,
+  requestPersistentStorage,
+  setLastBackupAt,
+} from '../lib/storage'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
 import Chip from '../components/Chip'
 
 type Editing = { kind: 'closed' } | { kind: 'new' } | { kind: 'edit'; exercise: Exercise }
+type Message = { kind: 'ok' | 'error'; text: string }
 
 export default function SettingsPage() {
   const exercises = useLiveQuery(() => db.exercises.toArray(), [])
@@ -17,11 +25,25 @@ export default function SettingsPage() {
     weights: await db.bodyWeights.count(),
   }))
   const [editing, setEditing] = useState<Editing>({ kind: 'closed' })
-  const [message, setMessage] = useState<string>()
+  const [message, setMessage] = useState<Message>()
+  const [lastBackup, setLastBackup] = useState(getLastBackupAt)
+  const [persisted, setPersisted] = useState<boolean>()
   const fileRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    requestPersistentStorage().then(setPersisted)
+  }, [])
+
   const handleExport = async () => {
-    downloadJson(await exportData(), `gymlog-backup-${toDateKey()}.json`)
+    try {
+      const saved = await saveJsonFile(await exportData(), `gymlog-backup-${toDateKey()}.json`)
+      if (!saved) return
+      setLastBackupAt()
+      setLastBackup(getLastBackupAt())
+      setMessage({ kind: 'ok', text: 'バックアップを書き出しました' })
+    } catch {
+      setMessage({ kind: 'error', text: '書き出しに失敗しました' })
+    }
   }
 
   const handleImport = async (file: File) => {
@@ -29,28 +51,57 @@ export default function SettingsPage() {
       const data = parseBackup(await file.text())
       if (!confirm('現在のデータはすべて置き換えられます。復元しますか？')) return
       await importData(data)
-      setMessage(
-        `復元しました（${data.workoutSets.length}セット / 体重${data.bodyWeights.length}件）`,
-      )
+      setMessage({
+        kind: 'ok',
+        text: `復元しました（${data.workoutSets.length}セット / 体重${data.bodyWeights.length}件）`,
+      })
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '復元に失敗しました')
+      setMessage({ kind: 'error', text: e instanceof Error ? e.message : '復元に失敗しました' })
     }
   }
+
+  const needsInstallHint = isIOS() && !isStandalone()
 
   return (
     <>
       <PageHeader title="設定" />
       <main className="flex flex-col gap-4 px-4">
         <section className="rounded-2xl border border-line bg-surface p-4">
+          <h2 className="font-bold">データの保護</h2>
+          {persisted ? (
+            <p className="mt-2 flex items-start gap-2 text-sm text-ink-2">
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-accent" />
+              ブラウザがデータを自動で消さないように設定されています。
+            </p>
+          ) : (
+            <p className="mt-2 flex items-start gap-2 text-sm text-ink-2">
+              <ShieldAlert size={18} className="mt-0.5 shrink-0 text-danger" />
+              {needsInstallHint
+                ? 'Safari で開いたままだと、しばらく使わないとデータが消えることがあります。共有ボタン →「ホーム画面に追加」から開いてください。'
+                : 'ブラウザの判断でデータが消える可能性があります。こまめにバックアップしてください。'}
+            </p>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-line bg-surface p-4">
           <h2 className="font-bold">バックアップ</h2>
           <p className="mt-1 mb-3 text-sm text-muted">
             データはこの端末のブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。
           </p>
-          {counts && (
-            <p className="mb-3 text-sm text-ink-2">
-              保存中：筋トレ {counts.sets} セット / 体重 {counts.weights} 件
-            </p>
-          )}
+          <dl className="mb-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+            {counts && (
+              <>
+                <dt className="text-muted">保存中</dt>
+                <dd className="text-ink-2">
+                  筋トレ {counts.sets} セット / 体重 {counts.weights} 件
+                </dd>
+              </>
+            )}
+            <dt className="text-muted">前回の書き出し</dt>
+            <dd className="text-ink-2">
+              {lastBackup ? formatDate(toDateKey(lastBackup)) : 'まだありません'}
+            </dd>
+          </dl>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleExport}
@@ -76,7 +127,14 @@ export default function SettingsPage() {
               e.target.value = ''
             }}
           />
-          {message && <p className="mt-3 text-sm text-accent">{message}</p>}
+          {message && (
+            <p
+              role={message.kind === 'error' ? 'alert' : 'status'}
+              className={`mt-3 text-sm ${message.kind === 'error' ? 'text-danger' : 'text-accent'}`}
+            >
+              {message.text}
+            </p>
+          )}
         </section>
 
         <section className="rounded-2xl border border-line bg-surface p-4">

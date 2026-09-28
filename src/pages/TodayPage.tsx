@@ -2,8 +2,18 @@ import { useCallback, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, ChevronRight, Dumbbell, Plus } from 'lucide-react'
-import { addSets, db, lastSetOf, type Exercise, type WorkoutSet } from '../db/db'
-import { addDays, formatDate, toDateKey } from '../lib/date'
+import {
+  addSets,
+  db,
+  deleteSets,
+  lastSetOf,
+  updateSetGroup,
+  type Exercise,
+  type WorkoutSet,
+} from '../db/db'
+import { addDays, formatDate, isDateKey } from '../lib/date'
+import { useToday } from '../lib/useToday'
+import { showUndoToast } from '../lib/toast'
 import { fmt, groupSets, volume, type SetGroup } from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 import Sheet from '../components/Sheet'
@@ -23,14 +33,23 @@ type SheetState =
 
 const DEFAULT_ENTRY: EntryValues = { weight: 20, reps: 10, sets: 3 }
 
+const describe = (v: EntryValues) => `${fmt(v.weight)}kg×${v.reps}回×${v.sets}セット`
+
 export default function TodayPage() {
   const [params, setParams] = useSearchParams()
-  const today = toDateKey()
-  const date = params.get('date') ?? today
+  // 日付をまたいでも「今日」が自動で切り替わる
+  const today = useToday()
+  const param = params.get('date')
+  // 不正な日付や未来の日付は今日として扱う
+  const date = param && isDateKey(param) && param <= today ? param : today
   const setDate = (d: string) => setParams(d === today ? {} : { date: d }, { replace: true })
 
   const [sheet, setSheet] = useState<SheetState>({ kind: 'closed' })
-  const close = useCallback(() => setSheet({ kind: 'closed' }), [])
+  const [dirty, setDirty] = useState(false)
+  const close = useCallback(() => {
+    setSheet({ kind: 'closed' })
+    setDirty(false)
+  }, [])
 
   const data = useLiveQuery(async () => {
     const sets = await db.workoutSets.where('date').equals(date).sortBy('createdAt')
@@ -57,37 +76,26 @@ export default function TodayPage() {
   }
 
   const handleAdd = async (exercise: Exercise, v: EntryValues) => {
-    await addSets(date, exercise.id, v.weight, v.reps, v.sets)
+    const ids = await addSets(date, exercise.id, v.weight, v.reps, v.sets)
     close()
+    showUndoToast(`${exercise.name} ${describe(v)}を記録しました`, async () => {
+      await db.workoutSets.bulkDelete(ids)
+    })
   }
 
   const handleEdit = async (exercise: Exercise, group: SetGroup, v: EntryValues) => {
-    await db.transaction('rw', db.workoutSets, async () => {
-      const keep = group.ids.slice(0, v.sets)
-      const remove = group.ids.slice(v.sets)
-      await db.workoutSets.bulkUpdate(
-        keep.map((id) => ({ key: id, changes: { weight: v.weight, reps: v.reps } })),
-      )
-      await db.workoutSets.bulkDelete(remove)
-      if (v.sets > group.ids.length) {
-        // 元のグループと同じ位置に並ぶよう createdAt を揃える
-        await addSets(
-          date,
-          exercise.id,
-          v.weight,
-          v.reps,
-          v.sets - group.ids.length,
-          db,
-          group.createdAt,
-        )
-      }
-    })
+    const undo = await updateSetGroup(group.ids, v)
     close()
+    showUndoToast(`${exercise.name}を${describe(v)}に変更しました`, undo)
   }
 
-  const handleDelete = async (group: SetGroup) => {
-    await db.workoutSets.bulkDelete(group.ids)
+  const handleDelete = async (exercise: Exercise, group: SetGroup) => {
+    const undo = await deleteSets(group.ids)
     close()
+    showUndoToast(
+      `${exercise.name} ${describe({ weight: group.weight, reps: group.reps, sets: group.count })}を削除しました`,
+      undo,
+    )
   }
 
   const totalVolume = data ? volume(data.flatMap((d) => d.sets)) : 0
@@ -193,6 +201,7 @@ export default function TodayPage() {
       <Sheet
         open={sheet.kind !== 'closed'}
         onClose={close}
+        dismissible={!dirty}
         title={
           sheet.kind === 'pick'
             ? '種目を選択'
@@ -208,6 +217,7 @@ export default function TodayPage() {
             initial={sheet.initial}
             previous={sheet.previous}
             submitLabel="記録する"
+            onDirtyChange={setDirty}
             onSubmit={(v) => handleAdd(sheet.exercise, v)}
           />
         )}
@@ -220,8 +230,9 @@ export default function TodayPage() {
               sets: sheet.group.count,
             }}
             submitLabel="更新する"
+            onDirtyChange={setDirty}
             onSubmit={(v) => handleEdit(sheet.exercise, sheet.group, v)}
-            onDelete={() => handleDelete(sheet.group)}
+            onDelete={() => handleDelete(sheet.exercise, sheet.group)}
           />
         )}
       </Sheet>

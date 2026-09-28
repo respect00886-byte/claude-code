@@ -6,6 +6,13 @@ export function toDateKey(d: Date = new Date()): string {
   return `${y}-${m}-${day}`
 }
 
+/** YYYY-MM-DD 形式の実在する日付か */
+export function isDateKey(v: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false
+  const [y, m, d] = v.split('-').map(Number)
+  return toDateKey(new Date(y, m - 1, d)) === v
+}
+
 export function addDays(key: string, days: number): string {
   const [y, m, d] = key.split('-').map(Number)
   return toDateKey(new Date(y, m - 1, d + days))

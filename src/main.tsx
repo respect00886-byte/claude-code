@@ -1,10 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
+import { requestPersistentStorage } from './lib/storage'
 import App from './App'
 import './index.css'
 
-registerSW({ immediate: true })
+// ブラウザに保存データを自動で消さないよう依頼する
+void requestPersistentStorage()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
