@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { fmt } from '../lib/stats'
+import { useState, type ReactNode } from 'react'
+import type { ExerciseKind } from '../db/db'
+import { describeSets, fmt } from '../lib/stats'
 import { formatDate } from '../lib/date'
 import Stepper from './Stepper'
 
@@ -11,8 +12,15 @@ export interface EntryValues {
 
 interface Props {
   initial: EntryValues
+  kind: ExerciseKind
+  /** 重量の刻み (kg) */
+  step: number
   /** 前回の記録 (表示用) */
   previous?: EntryValues & { date: string }
+  /** true のときセット数は 1 に固定 (1セットだけ編集する場合) */
+  singleSet?: boolean
+  /** フォームの上に表示する内容 (セットの選択など) */
+  header?: ReactNode
   submitLabel: string
   onSubmit: (v: EntryValues) => Promise<void>
   onDelete?: () => Promise<void>
@@ -23,7 +31,11 @@ interface Props {
 /** 重量・回数・セット数の入力フォーム */
 export default function EntryForm({
   initial,
+  kind,
+  step,
   previous,
+  singleSet,
+  header,
   submitLabel,
   onSubmit,
   onDelete,
@@ -31,7 +43,7 @@ export default function EntryForm({
 }: Props) {
   const [weight, setWeight] = useState(initial.weight)
   const [reps, setReps] = useState(initial.reps)
-  const [sets, setSets] = useState(initial.sets)
+  const [sets, setSets] = useState(singleSet ? 1 : initial.sets)
   // 保存中は二重タップで同じセットが重複登録されないようボタンを無効にする
   const [busy, setBusy] = useState(false)
 
@@ -56,22 +68,23 @@ export default function EntryForm({
     }
   }
 
+  const bodyweight = kind === 'bodyweight'
+
   return (
     <div className="flex flex-col gap-5">
+      {header}
       {previous && (
         <p className="rounded-xl bg-surface-2 px-3 py-2 text-sm text-ink-2">
           前回 {formatDate(previous.date)}：
-          <span className="font-semibold text-ink">
-            {fmt(previous.weight)}kg × {previous.reps}回 × {previous.sets}セット
-          </span>
+          <span className="font-semibold text-ink">{describeSets(previous, kind)}</span>
         </p>
       )}
       <Stepper
-        label="重量"
+        label={bodyweight ? '加重（自重のみは0）' : '重量'}
         unit="kg"
         value={weight}
         onChange={(v) => change({ ...values, weight: v })}
-        step={2.5}
+        step={step}
         decimals={2}
       />
       <Stepper
@@ -83,17 +96,29 @@ export default function EntryForm({
         min={1}
         max={999}
       />
-      <Stepper
-        label="セット数"
-        value={sets}
-        onChange={(v) => change({ ...values, sets: v })}
-        step={1}
-        min={1}
-        max={50}
-      />
+      {!singleSet && (
+        <Stepper
+          label="セット数"
+          value={sets}
+          onChange={(v) => change({ ...values, sets: v })}
+          step={1}
+          min={1}
+          max={50}
+        />
+      )}
       <p className="text-center text-sm text-muted">
-        合計ボリューム{' '}
-        <span className="font-semibold text-ink tabular-nums">{fmt(weight * reps * sets)} kg</span>
+        {bodyweight ? (
+          <>
+            合計 <span className="font-semibold text-ink tabular-nums">{reps * sets} 回</span>
+          </>
+        ) : (
+          <>
+            合計ボリューム{' '}
+            <span className="font-semibold text-ink tabular-nums">
+              {fmt(weight * reps * sets)} kg
+            </span>
+          </>
+        )}
       </p>
       <div className="flex gap-2">
         {onDelete && (

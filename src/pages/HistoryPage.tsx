@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { CalendarDays, ChevronRight } from 'lucide-react'
 import { db } from '../db/db'
 import { formatDate } from '../lib/date'
-import { byInputOrder, fmt, groupSets, volume } from '../lib/stats'
+import { byInputOrder, fmt, formatLoad, groupSets, volume } from '../lib/stats'
 import PageHeader from '../components/PageHeader'
 
 export default function HistoryPage() {
@@ -13,7 +13,7 @@ export default function HistoryPage() {
       db.exercises.toArray(),
       db.bodyWeights.toArray(),
     ])
-    const names = new Map(exercises.map((e) => [e.id, e.name]))
+    const byId = new Map(exercises.map((e) => [e.id, e]))
     const weightByDate = new Map(weights.map((w) => [w.date, w.weight]))
     const dates = [...new Set(sets.map((s) => s.date))].sort().reverse()
     return dates.map((date) => {
@@ -27,9 +27,9 @@ export default function HistoryPage() {
           const list = daySets.filter((s) => s.exerciseId === id)
           return {
             id,
-            name: names.get(id) ?? '(削除された種目)',
+            name: byId.get(id)?.name ?? '(削除された種目)',
             summary: groupSets(list)
-              .map((g) => `${fmt(g.weight)}kg×${g.reps}×${g.count}`)
+              .map((g) => `${formatLoad(g.weight, byId.get(id)?.kind)}×${g.reps}×${g.count}`)
               .join(', '),
           }
         }),

@@ -1,13 +1,23 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { SEED_EXERCISES } from './seed'
+import { SEED_EXERCISES, seedDefaults } from './seed'
 
 export const CATEGORIES = ['胸', '背中', '脚', '肩', '腕', '腹', 'その他'] as const
 export type Category = (typeof CATEGORIES)[number]
+
+export const EXERCISE_KINDS = ['weighted', 'bodyweight'] as const
+/** weighted = 重量を扱う種目 / bodyweight = 自重種目 (重量は加重分、0 なら自重のみ) */
+export type ExerciseKind = (typeof EXERCISE_KINDS)[number]
+
+/** 重量の刻みとして選べる値 (kg) */
+export const WEIGHT_STEPS = [0.5, 1, 1.25, 2, 2.5, 5] as const
 
 export interface Exercise {
   id: number
   name: string
   category: Category
+  kind: ExerciseKind
+  /** ステッパーの重量の刻み (kg) */
+  step: number
   isCustom: boolean
   archived: boolean
 }
@@ -43,6 +53,19 @@ export class GymDB extends Dexie {
       workoutSets: '++id, date, exerciseId, [exerciseId+date], createdAt',
       bodyWeights: '++id, &date',
     })
+    // v2: 種目ごとの重量の刻み (step) と自重種目 (kind) を追加
+    this.version(2)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table('exercises')
+          .toCollection()
+          .modify((e: Exercise) => {
+            const d = seedDefaults(e.name)
+            e.kind ??= d.kind
+            e.step ??= d.step
+          }),
+      )
     this.on('populate', (tx) => {
       tx.table('exercises').bulkAdd(
         SEED_EXERCISES.map((e) => ({ ...e, isCustom: false, archived: false })),
@@ -119,17 +142,24 @@ export async function updateSetGroup(
   })
 }
 
-/** 指定種目の直近の記録 (最後に追加したセット) */
-export async function lastSetOf(exerciseId: number, database: GymDB = db) {
-  const sets = await database.workoutSets.where('exerciseId').equals(exerciseId).toArray()
-  if (sets.length === 0) return undefined
+/**
+ * 指定種目の前回の記録。beforeDate を渡すとその日より前の直近日から探す。
+ * 直近日のうち最後に入力した重量・回数と、同じ重量・回数のセット数を返す。
+ */
+export async function lastSetOf(exerciseId: number, beforeDate?: string, database: GymDB = db) {
+  const range = database.workoutSets
+    .where('[exerciseId+date]')
+    .between([exerciseId, Dexie.minKey], [exerciseId, beforeDate ?? Dexie.maxKey], true, false)
+  const lastRow = await range.last()
+  if (!lastRow) return undefined
+  const daySets = await database.workoutSets
+    .where('[exerciseId+date]')
+    .equals([exerciseId, lastRow.date])
+    .toArray()
   // 自動採番 id が大きいほど後に入力したセット
-  const latest = sets.reduce((a, b) => (b.id > a.id ? b : a))
-  // 直近日のうち最後に入力した重量・回数と、その日のセット数
-  const sameDay = sets.filter(
-    (s) => s.date === latest.date && s.weight === latest.weight && s.reps === latest.reps,
-  )
-  return { weight: latest.weight, reps: latest.reps, sets: sameDay.length, date: latest.date }
+  const latest = daySets.reduce((a, b) => (b.id > a.id ? b : a))
+  const count = daySets.filter((s) => s.weight === latest.weight && s.reps === latest.reps).length
+  return { weight: latest.weight, reps: latest.reps, sets: count, date: latest.date }
 }
 
 /** 体重を保存 (同じ日付は上書き) */

@@ -1,14 +1,17 @@
 import {
   CATEGORIES,
+  EXERCISE_KINDS,
   db as defaultDb,
   type BodyWeight,
   type Exercise,
   type GymDB,
   type WorkoutSet,
 } from '../db/db'
+import { seedDefaults } from '../db/seed'
 import { isDateKey } from './date'
 
-export const BACKUP_VERSION = 1
+/** v2: 種目に kind (自重種目) と step (重量の刻み) を追加。v1 のファイルも読み込める */
+export const BACKUP_VERSION = 2
 
 export interface BackupData {
   app: 'gymlog'
@@ -44,7 +47,9 @@ function isExercise(v: unknown): v is Exercise {
     v.name.length > 0 &&
     (CATEGORIES as readonly unknown[]).includes(v.category) &&
     typeof v.isCustom === 'boolean' &&
-    typeof v.archived === 'boolean'
+    typeof v.archived === 'boolean' &&
+    (EXERCISE_KINDS as readonly unknown[]).includes(v.kind) &&
+    isNum(v.step, 0.01, 100)
   )
 }
 
@@ -92,7 +97,12 @@ export function parseBackup(text: string): BackupData {
   if (!isObj(data) || data.app !== 'gymlog') {
     throw new Error('GymLog のバックアップファイルではありません')
   }
-  if (data.version !== BACKUP_VERSION) {
+  if (data.version === 1 && Array.isArray(data.exercises)) {
+    // v1 には kind / step がないので初期種目の設定で補う
+    data.exercises = data.exercises.map((e) =>
+      isObj(e) && typeof e.name === 'string' ? { ...seedDefaults(e.name), ...e } : e,
+    )
+  } else if (data.version !== BACKUP_VERSION) {
     throw new Error('このバージョンのバックアップファイルには対応していません')
   }
   if (

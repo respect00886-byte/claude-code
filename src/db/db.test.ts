@@ -34,8 +34,44 @@ describe('db', () => {
   it('lastSetOf returns the latest entry', async () => {
     await addSets('2026-09-01', 1, 60, 10, 3, db)
     await addSets('2026-09-05', 1, 62.5, 8, 2, db)
-    expect(await lastSetOf(1, db)).toEqual({ weight: 62.5, reps: 8, sets: 2, date: '2026-09-05' })
-    expect(await lastSetOf(2, db)).toBeUndefined()
+    expect(await lastSetOf(1, undefined, db)).toEqual({
+      weight: 62.5,
+      reps: 8,
+      sets: 2,
+      date: '2026-09-05',
+    })
+    expect(await lastSetOf(2, undefined, db)).toBeUndefined()
+  })
+
+  it('lastSetOf with beforeDate skips that day and later, even if entered later', async () => {
+    await addSets('2026-09-05', 1, 62.5, 8, 2, db)
+    // 過去の日付に後から追加しても「前回」は日付順で決まる
+    await addSets('2026-09-01', 1, 60, 10, 3, db)
+    expect((await lastSetOf(1, '2026-09-05', db))?.date).toBe('2026-09-01')
+    expect((await lastSetOf(1, '2026-09-10', db))?.date).toBe('2026-09-05')
+    expect(await lastSetOf(1, '2026-09-01', db)).toBeUndefined()
+  })
+
+  it('migrates v1 exercises to have kind and step', async () => {
+    const name = `migrate-${Math.random()}`
+    const { default: Dexie } = await import('dexie')
+    const v1 = new Dexie(name)
+    v1.version(1).stores({
+      exercises: '++id, name, category',
+      workoutSets: '++id, date, exerciseId, [exerciseId+date], createdAt',
+      bodyWeights: '++id, &date',
+    })
+    await v1.table('exercises').bulkAdd([
+      { name: '懸垂', category: '背中', isCustom: false, archived: false },
+      { name: 'マイ種目', category: 'その他', isCustom: true, archived: false },
+    ])
+    v1.close()
+    const v2 = new GymDB(name)
+    const rows = await v2.exercises.toArray()
+    expect(rows.map((e) => [e.name, e.kind, e.step])).toEqual([
+      ['懸垂', 'bodyweight', 2.5],
+      ['マイ種目', 'weighted', 2.5],
+    ])
   })
 
   it('deleteSets can be undone', async () => {
@@ -120,9 +156,25 @@ describe('backup', () => {
     expect(() => parseBackup('{"app":"other"}')).toThrow('GymLog')
   })
 
+  it('reads v1 files by filling in kind and step', async () => {
+    const data = await valid()
+    data.version = 1
+    for (const e of data.exercises) {
+      delete e.kind
+      delete e.step
+    }
+    const parsed = parseBackup(JSON.stringify(data))
+    expect(parsed.version).toBe(2)
+    expect(parsed.exercises.find((e) => e.name === '懸垂')).toMatchObject({
+      kind: 'bodyweight',
+      step: 2.5,
+    })
+    expect(parsed.exercises.find((e) => e.name === 'ダンベルカール')?.step).toBe(1)
+  })
+
   it('rejects unsupported versions', async () => {
     const data = await valid()
-    data.version = 2
+    data.version = 3
     expect(() => parseBackup(JSON.stringify(data))).toThrow('バージョン')
   })
 

@@ -8,15 +8,29 @@ import PageHeader from '../components/PageHeader'
 import TrendChart from '../components/TrendChart'
 import Chip from '../components/Chip'
 
-const METRICS = [
+type MetricKey = 'maxWeight' | 'est1RM' | 'volume' | 'maxReps' | 'totalReps'
+interface Metric {
+  key: MetricKey
+  label: string
+  unit: string
+}
+
+const WEIGHTED_METRICS: Metric[] = [
   { key: 'maxWeight', label: '最大重量', unit: 'kg' },
   { key: 'est1RM', label: '推定1RM', unit: 'kg' },
   { key: 'volume', label: 'ボリューム', unit: 'kg' },
-] as const
+]
+
+/** 自重種目は回数が主な指標 */
+const BODYWEIGHT_METRICS: Metric[] = [
+  { key: 'maxReps', label: '最大回数', unit: '回' },
+  { key: 'totalReps', label: '合計回数', unit: '回' },
+  { key: 'maxWeight', label: '最大加重', unit: 'kg' },
+]
 
 export default function StatsPage() {
   const [selected, setSelected] = useState<number | undefined>()
-  const [metric, setMetric] = useState<(typeof METRICS)[number]['key']>('maxWeight')
+  const [metric, setMetric] = useState<MetricKey>('maxWeight')
 
   // 記録のある種目を記録回数の多い順に
   const options = useLiveQuery(async () => {
@@ -29,6 +43,9 @@ export default function StatsPage() {
   }, [])
 
   const exerciseId = selected ?? options?.[0]?.id
+  const exercise = options?.find((e) => e.id === exerciseId)
+  const bodyweight = exercise?.kind === 'bodyweight'
+  const metrics = bodyweight ? BODYWEIGHT_METRICS : WEIGHTED_METRICS
   const sets = useLiveQuery(
     () => (exerciseId ? db.workoutSets.where('exerciseId').equals(exerciseId).toArray() : []),
     [exerciseId],
@@ -36,7 +53,8 @@ export default function StatsPage() {
 
   const stats = sets ? dailyStats(sets) : []
   const pb = sets ? personalBest(sets) : undefined
-  const m = METRICS.find((x) => x.key === metric)!
+  // 種目を切り替えて選んでいた指標がなくなったら先頭の指標を使う
+  const m = metrics.find((x) => x.key === metric) ?? metrics[0]
 
   return (
     <>
@@ -64,18 +82,35 @@ export default function StatsPage() {
 
             {pb && (
               <div className="grid grid-cols-3 gap-2">
+                {bodyweight ? (
+                  <>
+                    <Tile
+                      label="最大回数"
+                      value={`${pb.maxReps}回`}
+                      sub={formatDate(pb.maxRepsDate)}
+                    />
+                    <Tile
+                      label="最大加重"
+                      value={pb.maxWeight > 0 ? `+${fmt(pb.maxWeight)}kg` : '自重のみ'}
+                      sub={pb.maxWeight > 0 ? formatDate(pb.maxWeightDate) : '—'}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Tile
+                      label="最大重量"
+                      value={`${fmt(pb.maxWeight)}kg`}
+                      sub={formatDate(pb.maxWeightDate)}
+                    />
+                    <Tile
+                      label="推定1RM"
+                      value={`${fmt(pb.best1RM)}kg`}
+                      sub={formatDate(pb.best1RMDate)}
+                    />
+                  </>
+                )}
                 <Tile
-                  label="最大重量"
-                  value={`${fmt(pb.maxWeight)}kg`}
-                  sub={formatDate(pb.maxWeightDate)}
-                />
-                <Tile
-                  label="推定1RM"
-                  value={`${fmt(pb.best1RM)}kg`}
-                  sub={formatDate(pb.best1RMDate)}
-                />
-                <Tile
-                  label="トレーニング日数"
+                  label="記録日数"
                   value={`${stats.length}日`}
                   sub={`${sets?.length ?? 0}セット`}
                 />
@@ -84,14 +119,14 @@ export default function StatsPage() {
 
             <section className="rounded-2xl border border-line bg-surface p-4">
               <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1">
-                {METRICS.map((x) => (
-                  <Chip key={x.key} active={metric === x.key} onClick={() => setMetric(x.key)}>
+                {metrics.map((x) => (
+                  <Chip key={x.key} active={m.key === x.key} onClick={() => setMetric(x.key)}>
                     {x.label}
                   </Chip>
                 ))}
               </div>
               <TrendChart
-                data={stats.map((s) => ({ date: s.date, value: s[metric] }))}
+                data={stats.map((s) => ({ date: s.date, value: s[m.key] }))}
                 unit={m.unit}
                 label={m.label}
               />
@@ -107,7 +142,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
   return (
     <div className="rounded-2xl border border-line bg-surface p-3">
       <div className="flex items-center gap-1 text-[11px] text-muted">
-        {label !== 'トレーニング日数' && <Trophy size={12} />}
+        {label !== '記録日数' && <Trophy size={12} />}
         {label}
       </div>
       <div className="text-lg font-bold tabular-nums">{value}</div>

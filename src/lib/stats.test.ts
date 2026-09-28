@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkoutSet } from '../db/db'
-import { dailyStats, estimate1RM, groupSets, personalBest, volume } from './stats'
+import {
+  dailyStats,
+  describeSets,
+  estimate1RM,
+  formatLoad,
+  groupSets,
+  personalBest,
+  volume,
+} from './stats'
 
 let id = 0
 const set = (date: string, weight: number, reps: number): WorkoutSet => ({
@@ -68,5 +76,18 @@ describe('stats', () => {
       best1RMDate: '2026-09-01',
     })
     expect(personalBest([])).toBeUndefined()
+  })
+
+  it('dailyStats and personalBest track reps', () => {
+    const sets = [set('2026-09-01', 0, 8), set('2026-09-01', 0, 12), set('2026-09-02', 10, 6)]
+    expect(dailyStats(sets)[0]).toMatchObject({ maxReps: 12, totalReps: 20 })
+    expect(personalBest(sets)).toMatchObject({ maxReps: 12, maxRepsDate: '2026-09-01' })
+  })
+
+  it('formatLoad shows bodyweight exercises as 自重', () => {
+    expect(formatLoad(62.5)).toBe('62.5kg')
+    expect(formatLoad(0, 'bodyweight')).toBe('自重')
+    expect(formatLoad(10, 'bodyweight')).toBe('自重+10kg')
+    expect(describeSets({ weight: 0, reps: 10, sets: 3 }, 'bodyweight')).toBe('自重×10回×3セット')
   })
 })

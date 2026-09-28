@@ -1,4 +1,4 @@
-import type { WorkoutSet } from '../db/db'
+import type { ExerciseKind, WorkoutSet } from '../db/db'
 
 /** Epley 式による推定 1RM */
 export function estimate1RM(weight: number, reps: number): number {
@@ -45,6 +45,8 @@ export interface DailyStat {
   maxWeight: number
   est1RM: number
   volume: number
+  maxReps: number
+  totalReps: number
 }
 
 /** 種目のセット一覧から日別の最大重量・推定1RM・総ボリュームを算出 */
@@ -62,6 +64,8 @@ export function dailyStats(sets: WorkoutSet[]): DailyStat[] {
       maxWeight: Math.max(...list.map((s) => s.weight)),
       est1RM: Math.max(...list.map((s) => estimate1RM(s.weight, s.reps))),
       volume: volume(list),
+      maxReps: Math.max(...list.map((s) => s.reps)),
+      totalReps: list.reduce((n, s) => n + s.reps, 0),
     }))
 }
 
@@ -70,15 +74,25 @@ export interface PersonalBest {
   maxWeightDate: string
   best1RM: number
   best1RMDate: string
+  maxReps: number
+  maxRepsDate: string
 }
 
 export function personalBest(sets: WorkoutSet[]): PersonalBest | undefined {
   if (sets.length === 0) return undefined
-  let pb: PersonalBest = { maxWeight: -1, maxWeightDate: '', best1RM: -1, best1RMDate: '' }
+  let pb: PersonalBest = {
+    maxWeight: -1,
+    maxWeightDate: '',
+    best1RM: -1,
+    best1RMDate: '',
+    maxReps: -1,
+    maxRepsDate: '',
+  }
   for (const s of sets) {
     const e = estimate1RM(s.weight, s.reps)
     if (s.weight > pb.maxWeight) pb = { ...pb, maxWeight: s.weight, maxWeightDate: s.date }
     if (e > pb.best1RM) pb = { ...pb, best1RM: e, best1RMDate: s.date }
+    if (s.reps > pb.maxReps) pb = { ...pb, maxReps: s.reps, maxRepsDate: s.date }
   }
   return pb
 }
@@ -86,4 +100,18 @@ export function personalBest(sets: WorkoutSet[]): PersonalBest | undefined {
 /** 数値を見やすく (60, 62.5, 1,250) */
 export function fmt(n: number): string {
   return n.toLocaleString('ja-JP', { maximumFractionDigits: 2 })
+}
+
+/** 重量の表示。自重種目は「自重」「自重+10kg」 */
+export function formatLoad(weight: number, kind: ExerciseKind = 'weighted'): string {
+  if (kind === 'bodyweight') return weight > 0 ? `自重+${fmt(weight)}kg` : '自重'
+  return `${fmt(weight)}kg`
+}
+
+/** 「60kg×10回×3セット」形式 */
+export function describeSets(
+  v: { weight: number; reps: number; sets: number },
+  kind: ExerciseKind = 'weighted',
+): string {
+  return `${formatLoad(v.weight, kind)}×${v.reps}回×${v.sets}セット`
 }

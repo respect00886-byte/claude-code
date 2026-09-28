@@ -172,7 +172,7 @@ function WeightView({ records }: { records: BodyWeight[] }) {
                     <button
                       aria-label={`${formatDate(r.date)}の記録を削除`}
                       onClick={() => remove(r)}
-                      className="rounded-full p-2 text-muted active:bg-surface-2"
+                      className="-mr-2 flex size-11 items-center justify-center rounded-full text-muted active:bg-surface-2"
                     >
                       <Trash2 size={16} />
                     </button>

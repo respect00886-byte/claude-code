@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Download, Eye, EyeOff, Pencil, Plus, ShieldAlert, ShieldCheck, Upload } from 'lucide-react'
-import { CATEGORIES, db, type Category, type Exercise } from '../db/db'
+import {
+  CATEGORIES,
+  WEIGHT_STEPS,
+  db,
+  type Category,
+  type Exercise,
+  type ExerciseKind,
+} from '../db/db'
+import { fmt } from '../lib/stats'
 import { exportData, importData, parseBackup, saveJsonFile } from '../lib/backup'
 import { formatDate, toDateKey } from '../lib/date'
 import {
@@ -155,21 +163,26 @@ export default function SettingsPage() {
                 <h3 className="mb-1 text-xs font-semibold text-muted">{cat}</h3>
                 <ul className="divide-y divide-line">
                   {list.map((e) => (
-                    <li key={e.id} className="flex items-center gap-1 py-1.5">
-                      <span className={`flex-1 ${e.archived ? 'text-muted line-through' : ''}`}>
+                    <li key={e.id} className="flex items-center gap-1 py-0.5">
+                      <span
+                        className={`min-w-0 flex-1 ${e.archived ? 'text-muted line-through' : ''}`}
+                      >
                         {e.name}
+                        <span className="block text-xs text-muted">
+                          {e.kind === 'bodyweight' ? '自重' : `${fmt(e.step)}kg刻み`}
+                        </span>
                       </span>
                       <button
                         aria-label={`${e.name}を編集`}
                         onClick={() => setEditing({ kind: 'edit', exercise: e })}
-                        className="rounded-full p-2 text-muted active:bg-surface-2"
+                        className="flex size-11 items-center justify-center rounded-full text-muted active:bg-surface-2"
                       >
                         <Pencil size={16} />
                       </button>
                       <button
                         aria-label={e.archived ? `${e.name}を表示` : `${e.name}を非表示`}
                         onClick={() => db.exercises.update(e.id, { archived: !e.archived })}
-                        className="rounded-full p-2 text-muted active:bg-surface-2"
+                        className="flex size-11 items-center justify-center rounded-full text-muted active:bg-surface-2"
                       >
                         {e.archived ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -193,13 +206,12 @@ export default function SettingsPage() {
           <ExerciseForm
             key={editing.kind === 'edit' ? editing.exercise.id : 'new'}
             initial={editing.kind === 'edit' ? editing.exercise : undefined}
-            onSave={async (name, category) => {
+            onSave={async (values) => {
               if (editing.kind === 'edit') {
-                await db.exercises.update(editing.exercise.id, { name, category })
+                await db.exercises.update(editing.exercise.id, values)
               } else {
                 await db.exercises.add({
-                  name,
-                  category,
+                  ...values,
                   isCustom: true,
                   archived: false,
                 } as Exercise)
@@ -213,37 +225,71 @@ export default function SettingsPage() {
   )
 }
 
+type ExerciseValues = Pick<Exercise, 'name' | 'category' | 'kind' | 'step'>
+
 function ExerciseForm({
   initial,
   onSave,
 }: {
   initial?: Exercise
-  onSave: (name: string, category: Category) => void
+  onSave: (values: ExerciseValues) => void
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [category, setCategory] = useState<Category>(initial?.category ?? '胸')
+  const [kind, setKind] = useState<ExerciseKind>(initial?.kind ?? 'weighted')
+  const [step, setStep] = useState(initial?.step ?? 2.5)
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
-        if (name.trim()) onSave(name.trim(), category)
+        if (name.trim()) onSave({ name: name.trim(), category, kind, step })
       }}
     >
       <input
-        autoFocus
+        autoFocus={!initial}
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="種目名（例：ケーブルクロスオーバー）"
+        aria-label="種目名"
         className="rounded-xl bg-surface-2 px-3 py-3 outline-none placeholder:text-muted"
       />
-      <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => (
-          <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
-            {c}
+      <fieldset>
+        <legend className="mb-1.5 text-xs font-medium text-muted">部位</legend>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((c) => (
+            <Chip key={c} active={category === c} onClick={() => setCategory(c)}>
+              {c}
+            </Chip>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-1.5 text-xs font-medium text-muted">種類</legend>
+        <div className="flex flex-wrap gap-2">
+          <Chip active={kind === 'weighted'} onClick={() => setKind('weighted')}>
+            重量を使う
           </Chip>
-        ))}
-      </div>
+          <Chip active={kind === 'bodyweight'} onClick={() => setKind('bodyweight')}>
+            自重（加重は任意）
+          </Chip>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-1.5 text-xs font-medium text-muted">
+          ±ボタンで変わる重量{kind === 'bodyweight' && '（加重）'}
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {WEIGHT_STEPS.map((v) => (
+            <Chip key={v} active={step === v} onClick={() => setStep(v)}>
+              {fmt(v)}kg
+            </Chip>
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-muted">
+          目安：バーベル 2.5kg / ダンベル 1〜2kg / マシン 5kg
+        </p>
+      </fieldset>
       <button
         type="submit"
         disabled={!name.trim()}

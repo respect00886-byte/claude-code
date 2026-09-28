@@ -88,7 +88,7 @@ export default function Stepper({
         </span>
         <input
           type="number"
-          inputMode="decimal"
+          inputMode={decimals > 0 ? 'decimal' : 'numeric'}
           aria-label={label}
           className="w-full min-w-0 bg-transparent text-center text-4xl font-bold tabular-nums outline-none"
           value={editing ? text : String(value)}

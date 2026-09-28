@@ -4,9 +4,18 @@ import { Search } from 'lucide-react'
 import { CATEGORIES, db, type Category, type Exercise } from '../db/db'
 import Chip from './Chip'
 
+type Tab = Category | 'recent'
+
+/** 最後に開いていたタブ (「戻る」で選び直すときに同じ部位から探せるように) */
+let lastTab: Tab = 'recent'
+
 /** カテゴリで絞り込んで種目を選ぶ。最近使った種目を先頭に表示 */
 export default function ExercisePicker({ onSelect }: { onSelect: (e: Exercise) => void }) {
-  const [category, setCategory] = useState<Category | 'recent'>('recent')
+  const [category, setCategoryState] = useState<Tab>(lastTab)
+  const setCategory = (c: Tab) => {
+    lastTab = c
+    setCategoryState(c)
+  }
   const [query, setQuery] = useState('')
 
   const exercises = useLiveQuery(() => db.exercises.filter((e) => !e.archived).toArray(), [])
