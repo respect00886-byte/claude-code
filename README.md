@@ -38,9 +38,19 @@ npm run lint      # ESLint
 
 同じ Wi-Fi のスマホから試す場合は `npm run dev -- --host` で起動し、表示された URL にアクセスしてください。
 
+### 公開（GitHub Pages）
+
+`main` に変更が入るたびに、GitHub Actions（`.github/workflows/deploy.yml`）が検査・テスト・ビルドを行い、GitHub Pages に自動で公開します。
+
+最初の1回だけ、GitHub のリポジトリで **Settings → Pages → Build and deployment → Source** を **「GitHub Actions」** に切り替えてください。公開先は次のアドレスです。
+
+https://respect00886-byte.github.io/claude-code/
+
+手動で公開し直したいときは、**Actions → Deploy to GitHub Pages → Run workflow** から実行できます。
+
 ### スマホのホーム画面に追加する
 
-`dist/` を GitHub Pages・Netlify・Vercel などの HTTPS 対応の静的ホスティングに置き、スマホで開いて
+上のアドレスをスマホで開いて、
 
 - **iPhone (Safari)**：共有ボタン →「ホーム画面に追加」
 - **Android (Chrome)**：メニュー →「ホーム画面に追加」／「アプリをインストール」
