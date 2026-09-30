@@ -1,0 +1,228 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.view-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.view-tabs button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.view-tabs button.active {
+  background: #2f7a45;
+  color: #fff;
+  border-color: #2f7a45;
+}
+
+section,
+.menu-search,
+.meal-form,
+.daily-summary,
+.history-view,
+.goal-settings-fields {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.menu-search,
+.meal-form,
+.daily-summary {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+  color: #555;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+input,
+select {
+  font-size: 1rem;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.form-row label {
+  flex: 1;
+}
+
+.nutrients {
+  flex-wrap: wrap;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #2f7a45;
+  background: #2f7a45;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+button[type="button"] {
+  background: #fff;
+  color: #2f7a45;
+}
+
+.meal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meal-list-item {
+  border-top: 1px solid #eee;
+  padding: 8px 0;
+}
+
+.meal-list-main {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.meal-type-badge {
+  font-size: 0.75rem;
+  background: #eef6ee;
+  color: #2f7a45;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.meal-name {
+  font-weight: bold;
+}
+
+.meal-nutrients {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #555;
+  margin: 4px 0;
+}
+
+.meal-list-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.meal-list-actions button {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.empty-state {
+  color: #888;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 0.9rem;
+}
+
+.summary-label {
+  color: #555;
+}
+
+.summary-remaining {
+  color: #2f7a45;
+}
+
+.summary-over {
+  color: #c0392b;
+}
+
+.menu-search-input {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.menu-search-results {
+  list-style: none;
+  margin: 0 0 8px 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.menu-item-button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  color: #222;
+  border: 1px solid #eee;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.menu-item-brand {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.new-favorite-form {
+  border-top: 1px dashed #ccc;
+  padding-top: 8px;
+  margin-top: 8px;
+}
