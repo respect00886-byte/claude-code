@@ -13,6 +13,12 @@ export default defineConfig({
       // 入力中に勝手に再読み込みされないよう、更新は利用者が選ぶ
       registerType: 'prompt',
       includeAssets: ['icons/icon.svg'],
+      workbox: {
+        // meal-tracker/ は同じPagesサイトに同居する別アプリなので、
+        // GymLogのService WorkerがそのナビゲーションをGymLog自身の
+        // index.htmlにフォールバックさせないよう除外する
+        navigateFallbackDenylist: [/\/meal-tracker\//],
+      },
       manifest: {
         name: 'GymLog - 筋トレ・体重記録',
         short_name: 'GymLog',
