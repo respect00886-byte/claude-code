@@ -6,6 +6,7 @@ import { MealForm, type MealFormValues } from "./components/MealForm";
 import { MealList } from "./components/MealList";
 import { DailySummary } from "./components/DailySummary";
 import { GoalSettings } from "./components/GoalSettings";
+import { ProfileSettings } from "./components/ProfileSettings";
 import { HistoryView } from "./components/HistoryView";
 import { MenuSearch } from "./components/MenuSearch";
 
@@ -93,6 +94,7 @@ export default function App() {
       <header>
         <h1>毎日の食事管理</h1>
         <GoalSettings settings={settings} onChange={updateSettings} />
+        <ProfileSettings onApplyGoals={(goals) => updateSettings({ ...settings, ...goals })} />
       </header>
 
       <nav className="view-tabs">

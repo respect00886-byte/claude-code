@@ -52,7 +52,8 @@ section,
 .meal-form,
 .daily-summary,
 .history-view,
-.goal-settings-fields {
+.goal-settings-fields,
+.profile-settings-fields {
   background: #fff;
   border-radius: 8px;
   padding: 12px;
@@ -225,4 +226,31 @@ button[type="button"] {
   border-top: 1px dashed #ccc;
   padding-top: 8px;
   margin-top: 8px;
+}
+
+.brand-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.brand-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  border: 1px solid #2f7a45;
+  background: #fff;
+  color: #2f7a45;
+}
+
+.brand-chip.active {
+  background: #2f7a45;
+  color: #fff;
+}
+
+.profile-error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
 }

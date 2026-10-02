@@ -1,8 +1,9 @@
-import type { AppSettings, MealEntry, MenuItem } from "../types";
+import type { AppSettings, MealEntry, MenuItem, UserProfile } from "../types";
 
 const ENTRIES_KEY = "meal-tracker:entries";
 const SETTINGS_KEY = "meal-tracker:settings";
 const FAVORITES_KEY = "meal-tracker:favorites";
+const PROFILE_KEY = "meal-tracker:profile";
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -40,4 +41,12 @@ export function loadFavorites(): MenuItem[] {
 
 export function saveFavorites(favorites: MenuItem[]): void {
   saveJSON(FAVORITES_KEY, favorites);
+}
+
+export function loadProfile(): UserProfile {
+  return loadJSON<UserProfile>(PROFILE_KEY, {});
+}
+
+export function saveProfile(profile: UserProfile): void {
+  saveJSON(PROFILE_KEY, profile);
 }

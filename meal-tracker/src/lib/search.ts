@@ -15,3 +15,9 @@ function normalize(s: string): string {
     String.fromCharCode(ch.charCodeAt(0) - 0x60),
   );
 }
+
+/** Distinct brand names present in a menu list, sorted for stable chip ordering. */
+export function extractBrands(items: MenuItem[]): string[] {
+  const brands = new Set(items.map((item) => item.brand).filter((b): b is string => !!b));
+  return Array.from(brands).sort((a, b) => a.localeCompare(b, "ja"));
+}

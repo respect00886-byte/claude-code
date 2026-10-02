@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MenuItem } from "../types";
 import { starterMenu } from "../data/starterMenu";
-import { searchMenuItems } from "../lib/search";
+import { extractBrands, searchMenuItems } from "../lib/search";
 
 interface MenuSearchProps {
   favorites: MenuItem[];
@@ -28,11 +28,21 @@ function toNumberOrUndefined(raw: string): number | undefined {
 
 export function MenuSearch({ favorites, onQuickAdd, onAddFavorite }: MenuSearchProps) {
   const [query, setQuery] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState<NewFavoriteForm>(EMPTY_FORM);
 
   const allItems = useMemo(() => [...favorites, ...starterMenu], [favorites]);
-  const results = useMemo(() => searchMenuItems(query, allItems), [query, allItems]);
+  const brands = useMemo(() => extractBrands(allItems), [allItems]);
+  const textFiltered = useMemo(
+    () => (query.trim() !== "" ? searchMenuItems(query, allItems) : allItems),
+    [query, allItems],
+  );
+  const results = useMemo(
+    () => (selectedBrand ? textFiltered.filter((item) => item.brand === selectedBrand) : textFiltered),
+    [textFiltered, selectedBrand],
+  );
+  const showResults = query.trim() !== "" || selectedBrand !== null;
 
   function handleAddFavorite(e: React.FormEvent) {
     e.preventDefault();
@@ -59,7 +69,21 @@ export function MenuSearch({ favorites, onQuickAdd, onAddFavorite }: MenuSearchP
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      {query.trim() !== "" && (
+      {brands.length > 0 && (
+        <div className="brand-chip-row">
+          {brands.map((brand) => (
+            <button
+              key={brand}
+              type="button"
+              className={`brand-chip${selectedBrand === brand ? " active" : ""}`}
+              onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+            >
+              {brand}
+            </button>
+          ))}
+        </div>
+      )}
+      {showResults && (
         <ul className="menu-search-results">
           {results.map((item) => (
             <li key={item.id}>
