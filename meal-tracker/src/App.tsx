@@ -108,6 +108,7 @@ export default function App() {
         <main>
           <MenuSearch favorites={favorites} onQuickAdd={handleQuickAdd} onAddFavorite={handleAddFavorite} />
           <MealForm
+            key={editingEntry?.id ?? "new"}
             editingEntry={editingEntry}
             defaultDate={todayStr()}
             onSubmit={handleFormSubmit}

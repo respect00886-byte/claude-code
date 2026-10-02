@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { MealEntry, MealType } from "../types";
 import { MEAL_TYPE_LABELS } from "../types";
 import { suggestMealType, todayStr } from "../lib/date";
@@ -32,6 +32,19 @@ function emptyValues(defaultDate: string): MealFormValues {
   };
 }
 
+function initialValues(editingEntry: MealEntry | null, defaultDate: string): MealFormValues {
+  if (!editingEntry) return emptyValues(defaultDate);
+  return {
+    date: editingEntry.date,
+    mealType: editingEntry.mealType,
+    name: editingEntry.name,
+    calories: editingEntry.calories,
+    protein: editingEntry.protein,
+    fat: editingEntry.fat,
+    carbs: editingEntry.carbs,
+  };
+}
+
 function toNumberOrUndefined(raw: string): number | undefined {
   if (raw === "") return undefined;
   const n = Number(raw);
@@ -39,23 +52,7 @@ function toNumberOrUndefined(raw: string): number | undefined {
 }
 
 export function MealForm({ editingEntry, defaultDate, onSubmit, onCancelEdit }: MealFormProps) {
-  const [values, setValues] = useState<MealFormValues>(() => emptyValues(defaultDate));
-
-  useEffect(() => {
-    if (editingEntry) {
-      setValues({
-        date: editingEntry.date,
-        mealType: editingEntry.mealType,
-        name: editingEntry.name,
-        calories: editingEntry.calories,
-        protein: editingEntry.protein,
-        fat: editingEntry.fat,
-        carbs: editingEntry.carbs,
-      });
-    } else {
-      setValues(emptyValues(defaultDate));
-    }
-  }, [editingEntry, defaultDate]);
+  const [values, setValues] = useState<MealFormValues>(() => initialValues(editingEntry, defaultDate));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
