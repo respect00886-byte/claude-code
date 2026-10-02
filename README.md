@@ -3,7 +3,7 @@
 スマホで片手でサッと記録できる、筋トレと体重の管理アプリ（PWA）です。
 データは端末のブラウザ内（IndexedDB）に保存され、サーバーやログインは不要です。
 
-> このリポジトリには、食事管理アプリ（[meal-tracker/](./meal-tracker/)）も含まれています。使い方は[meal-tracker/README.md](./meal-tracker/README.md)を参照してください。
+> このリポジトリには、食事管理アプリ（[meal-tracker/](./meal-tracker/)）も含まれています。公開URL: https://respect00886-byte.github.io/claude-code/meal-tracker/ ／ 使い方は[meal-tracker/README.md](./meal-tracker/README.md)を参照してください。
 
 ## 主な機能
 
