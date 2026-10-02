@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MenuItem } from "../types";
 import { starterMenu } from "../data/starterMenu";
+import { genericFoods } from "../data/genericFoods";
 import { extractBrands, searchMenuItems } from "../lib/search";
 
 interface MenuSearchProps {
@@ -32,7 +33,7 @@ export function MenuSearch({ favorites, onQuickAdd, onAddFavorite }: MenuSearchP
   const [showNewForm, setShowNewForm] = useState(false);
   const [form, setForm] = useState<NewFavoriteForm>(EMPTY_FORM);
 
-  const allItems = useMemo(() => [...favorites, ...starterMenu], [favorites]);
+  const allItems = useMemo(() => [...favorites, ...starterMenu, ...genericFoods], [favorites]);
   const brands = useMemo(() => extractBrands(allItems), [allItems]);
   const textFiltered = useMemo(
     () => (query.trim() !== "" ? searchMenuItems(query, allItems) : allItems),
