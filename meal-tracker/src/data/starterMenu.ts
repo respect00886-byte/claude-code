@@ -60,6 +60,29 @@ export const starterMenu: MenuItem[] = [
   { id: "s46", name: "キムチ(トッピング)", brand: "吉野家", calories: 26, protein: 1, fat: 0, carbs: 5 },
   { id: "s47", name: "のり(トッピング)", brand: "吉野家", calories: 5, protein: 1, fat: 0, carbs: 1 },
 
+  { id: "s128", name: "牛皿(単品・並盛)", brand: "吉野家", calories: 281, protein: 17, fat: 20, carbs: 5 }, // calorie via aggregated 2024 menu table; macros estimated
+  { id: "s129", name: "牛皿(単品・大盛)", brand: "吉野家", calories: 344, protein: 21, fat: 25, carbs: 6 }, // calorie via aggregated 2024 menu table; macros estimated
+  { id: "s130", name: "牛皿(単品・特盛)", brand: "吉野家", calories: 532, protein: 32, fat: 39, carbs: 9 }, // calorie via aggregated 2024 menu table (uncertain jump vs 大盛; treat cautiously); macros estimated
+  { id: "s131", name: "から揚げ定食(大盛)", brand: "吉野家", calories: 1366, protein: 51, fat: 73, carbs: 123 }, // FatSecret-sourced
+  { id: "s132", name: "から揚げ定食(特盛)", brand: "吉野家", calories: 1563, protein: 60, fat: 88, carbs: 130 }, // FatSecret-sourced
+  { id: "s133", name: "牛カルビ丼(小盛)", brand: "吉野家", calories: 568, protein: 17, fat: 23, carbs: 72 }, // calorie via FatSecret; macros estimated, scaled from 並盛
+  { id: "s134", name: "牛カルビ丼(大盛)", brand: "吉野家", calories: 987, protein: 30, fat: 37, carbs: 128 }, // calorie via FatSecret; macros estimated, scaled from 並盛
+  { id: "s135", name: "牛カルビ丼(特盛)", brand: "吉野家", calories: 1226, protein: 37, fat: 46, carbs: 165 }, // calorie via FatSecret; macros estimated, scaled from 並盛
+  { id: "s136", name: "鰻皿(二枚盛)", brand: "吉野家", calories: 651, protein: 51, fat: 46, carbs: 12 }, // FatSecret-sourced
+  { id: "s137", name: "鰻重(二枚盛)", brand: "吉野家", calories: 1068, protein: 45, fat: 43, carbs: 115 }, // [fully estimated] extrapolated from 鰻重(一枚盛)
+  { id: "s138", name: "旨辛カレー", brand: "吉野家", calories: 604, protein: 18, fat: 15, carbs: 97 }, // FatSecret-sourced (archived listing)
+  { id: "s139", name: "肉だくバタービーフカレー(並盛)", brand: "吉野家", calories: 788, protein: 22, fat: 31, carbs: 108 }, // FatSecret-sourced
+  { id: "s140", name: "鉄板バタービーフカレー", brand: "吉野家", calories: 838, protein: 25, fat: 31, carbs: 118 }, // FatSecret-sourced
+  { id: "s141", name: "焼鮭定食", brand: "吉野家", calories: 568, protein: 26, fat: 18, carbs: 75 }, // calorie via media comparison article; macros estimated
+  { id: "s142", name: "ハムエッグ納豆定食", brand: "吉野家", calories: 581, protein: 28, fat: 22, carbs: 65 }, // calorie via FatSecret; macros estimated
+  { id: "s143", name: "Wハムエッグ納豆定食", brand: "吉野家", calories: 683, protein: 35, fat: 28, carbs: 68 }, // calorie via FatSecret; macros estimated
+  { id: "s144", name: "納豆牛小鉢定食", brand: "吉野家", calories: 612, protein: 26, fat: 20, carbs: 78 }, // calorie via FatSecret; macros estimated
+  { id: "s145", name: "特朝定食(鮭)", brand: "吉野家", calories: 653, protein: 27, fat: 20, carbs: 88 }, // calorie via FatSecret; macros estimated
+  { id: "s146", name: "牛鍋丼(大盛)", brand: "吉野家", calories: 841, protein: 27, fat: 30, carbs: 114 }, // [fully estimated] scaled from 並盛
+  { id: "s147", name: "お新香(お漬物)", brand: "吉野家", calories: 20, protein: 1, fat: 0, carbs: 4 }, // [fully estimated]
+  { id: "s148", name: "ご飯(並盛)", brand: "吉野家", calories: 252, protein: 4, fat: 1, carbs: 55 }, // [fully estimated], typical white-rice bowl figure
+  { id: "s149", name: "ご飯(大盛)", brand: "吉野家", calories: 377, protein: 6, fat: 1, carbs: 83 }, // [fully estimated], typical white-rice bowl figure
+  { id: "s150", name: "ハムエッグ(単品)", brand: "吉野家", calories: 190, protein: 13, fat: 14, carbs: 2 }, // [fully estimated]
   // はなまるうどん
   { id: "s48", name: "かけうどん(小)", brand: "はなまるうどん", calories: 292, protein: 6, fat: 2, carbs: 58 },
   { id: "s49", name: "かけうどん(中)", brand: "はなまるうどん", calories: 573, protein: 11, fat: 4, carbs: 112 },
@@ -92,6 +115,29 @@ export const starterMenu: MenuItem[] = [
   { id: "s76", name: "おでん(牛すじ)", brand: "はなまるうどん", calories: 37, protein: 4, fat: 2, carbs: 1 },
   { id: "s77", name: "おでん(たまご)", brand: "はなまるうどん", calories: 79, protein: 6, fat: 5, carbs: 1 },
 
+  { id: "s151", name: "きつねうどん(中)", brand: "はなまるうどん", calories: 716, protein: 16, fat: 13, carbs: 135 }, // calorie via scraped official-style listing; macros estimated
+  { id: "s152", name: "きつねうどん(大)", brand: "はなまるうどん", calories: 975, protein: 22, fat: 18, carbs: 180 }, // calorie via scraped official-style listing; macros estimated
+  { id: "s153", name: "カレーうどん(大)", brand: "はなまるうどん", calories: 1253, protein: 22, fat: 38, carbs: 210 }, // calorie via scraped official-style listing; macros estimated
+  { id: "s154", name: "牛肉うどん(中)", brand: "はなまるうどん", calories: 870, protein: 26, fat: 21, carbs: 140 }, // [fully estimated] scaled from 小
+  { id: "s155", name: "牛肉うどん(大)", brand: "はなまるうどん", calories: 1243, protein: 38, fat: 30, carbs: 200 }, // [fully estimated] scaled from 小
+  { id: "s156", name: "おろししょうゆうどん(中)", brand: "はなまるうどん", calories: 576, protein: 12, fat: 4, carbs: 125 }, // [fully estimated] scaled from 小
+  { id: "s157", name: "おろししょうゆうどん(大)", brand: "はなまるうどん", calories: 853, protein: 17, fat: 6, carbs: 180 }, // [fully estimated] scaled from 小
+  { id: "s158", name: "わかめうどん(中)", brand: "はなまるうどん", calories: 586, protein: 14, fat: 4, carbs: 130 }, // [fully estimated] scaled from 小
+  { id: "s159", name: "わかめうどん(大)", brand: "はなまるうどん", calories: 867, protein: 20, fat: 6, carbs: 180 }, // [fully estimated] scaled from 小
+  { id: "s160", name: "ざるうどん(中)", brand: "はなまるうどん", calories: 593, protein: 11, fat: 2, carbs: 135 }, // [fully estimated] scaled from 小
+  { id: "s161", name: "釜上げうどん(中)", brand: "はなまるうどん", calories: 593, protein: 11, fat: 4, carbs: 130 }, // [fully estimated] scaled from 小
+  { id: "s162", name: "温玉ぶっかけ(中)", brand: "はなまるうどん", calories: 650, protein: 14, fat: 12, carbs: 120 }, // [fully estimated] scaled from 小
+  { id: "s163", name: "釜玉うどん(中)", brand: "はなまるうどん", calories: 620, protein: 17, fat: 11, carbs: 110 }, // [fully estimated] scaled from 小
+  { id: "s164", name: "ぶっかけうどん(中)", brand: "はなまるうどん", calories: 551, protein: 14, fat: 4, carbs: 110 }, // [fully estimated] scaled from 小
+  { id: "s165", name: "豚しゃぶうどん(小)", brand: "はなまるうどん", calories: 510, protein: 18, fat: 16, carbs: 70 }, // calorie via FatSecret; macros estimated
+  { id: "s166", name: "豚しゃぶうどん(中)", brand: "はなまるうどん", calories: 799, protein: 28, fat: 25, carbs: 115 }, // calorie via FatSecret; macros estimated
+  { id: "s167", name: "豚しゃぶうどん(大)", brand: "はなまるうどん", calories: 1185, protein: 42, fat: 37, carbs: 165 }, // calorie via FatSecret; macros estimated
+  { id: "s168", name: "おにぎり(辛子明太子)", brand: "はなまるうどん", calories: 181, protein: 3, fat: 1, carbs: 39 }, // calorie via scraped listing; macros estimated
+  { id: "s169", name: "おにぎり(鮭)", brand: "はなまるうどん", calories: 191, protein: 4, fat: 2, carbs: 39 }, // calorie via scraped listing; macros estimated
+  { id: "s170", name: "北海道男爵のコロッケ", brand: "はなまるうどん", calories: 231, protein: 3, fat: 12, carbs: 28 }, // FatSecret-sourced
+  { id: "s171", name: "いか天", brand: "はなまるうどん", calories: 108, protein: 5, fat: 6, carbs: 9 }, // calorie via mynavi listing; macros estimated
+  { id: "s172", name: "かぼちゃ天", brand: "はなまるうどん", calories: 124, protein: 1, fat: 8, carbs: 11 }, // calorie via scraped listing; macros estimated
+  { id: "s173", name: "塩豚温玉ぶっかけ", brand: "はなまるうどん", calories: 450, protein: 16, fat: 14, carbs: 65 }, // [fully estimated]
   // 日高屋
   { id: "s78", name: "中華そば", brand: "日高屋", calories: 669, protein: 23, fat: 18, carbs: 84 },
   { id: "s79", name: "タンメン", brand: "日高屋", calories: 480, protein: 17, fat: 14, carbs: 68 },
@@ -123,4 +169,24 @@ export const starterMenu: MenuItem[] = [
   { id: "s105", name: "ニラレバ炒め定食", brand: "日高屋", calories: 982, protein: 35, fat: 45, carbs: 90 },
   { id: "s106", name: "バクダン炒め定食", brand: "日高屋", calories: 960, protein: 30, fat: 45, carbs: 90 },
   { id: "s107", name: "W餃子定食(白菜キムチ)", brand: "日高屋", calories: 1120, protein: 30, fat: 50, carbs: 110 },
+  { id: "s108", name: "生姜焼き定食", brand: "日高屋", calories: 1070, protein: 35, fat: 41, carbs: 130 }, // FatSecret-sourced
+  { id: "s109", name: "汁なしラーメン(油そば)", brand: "日高屋", calories: 1036, protein: 27, fat: 46, carbs: 127 }, // calorie via FatSecret(archived); macros estimated
+  { id: "s110", name: "味玉とんこつラーメン", brand: "日高屋", calories: 749, protein: 27, fat: 27, carbs: 95 }, // [fully estimated] base + flavored egg
+  { id: "s111", name: "ニラレバ炒め(単品)", brand: "日高屋", calories: 473, protein: 22, fat: 33, carbs: 16 }, // calorie via ranking.net; macros estimated
+  { id: "s112", name: "バクダン炒め(単品)", brand: "日高屋", calories: 430, protein: 17, fat: 30, carbs: 22 }, // [fully estimated]
+  { id: "s113", name: "水餃子(6個)", brand: "日高屋", calories: 250, protein: 9, fat: 9, carbs: 32 }, // [fully estimated]
+  { id: "s114", name: "五目春巻き(2本)", brand: "日高屋", calories: 220, protein: 6, fat: 12, carbs: 21 }, // [fully estimated]
+  { id: "s115", name: "中華そば(大盛)", brand: "日高屋", calories: 849, protein: 29, fat: 23, carbs: 107 }, // estimated, scaled from 並盛
+  { id: "s116", name: "タンメン(大盛)", brand: "日高屋", calories: 660, protein: 23, fat: 19, carbs: 93 }, // estimated, scaled from 並盛
+  { id: "s117", name: "とんこつラーメン(大盛)", brand: "日高屋", calories: 849, protein: 28, fat: 25, carbs: 108 }, // estimated, scaled from 並盛
+  { id: "s118", name: "野菜たっぷりみそラーメン(大盛)", brand: "日高屋", calories: 820, protein: 26, fat: 26, carbs: 108 }, // estimated, scaled from 並盛
+  { id: "s119", name: "秘伝の辛味噌ラーメン(大盛)", brand: "日高屋", calories: 1234, protein: 36, fat: 48, carbs: 143 }, // estimated, scaled from 並盛
+  { id: "s120", name: "五目あんかけラーメン(大盛)", brand: "日高屋", calories: 1107, protein: 34, fat: 43, carbs: 134 }, // estimated, scaled from 並盛
+  { id: "s121", name: "ラ・餃・チャセット", brand: "日高屋", calories: 800, protein: 24, fat: 27, carbs: 97 }, // estimated, = 半ラーメン+半チャーハン+餃子3個
+  { id: "s122", name: "おつまみ枝豆", brand: "日高屋", calories: 110, protein: 9, fat: 5, carbs: 8 }, // [fully estimated]
+  { id: "s123", name: "おつまみネギチャーシュー", brand: "日高屋", calories: 180, protein: 18, fat: 11, carbs: 3 }, // [fully estimated]
+  { id: "s124", name: "コリ旨!砂肝", brand: "日高屋", calories: 150, protein: 17, fat: 8, carbs: 2 }, // [fully estimated]
+  { id: "s125", name: "三品盛り合わせ", brand: "日高屋", calories: 280, protein: 15, fat: 18, carbs: 13 }, // [fully estimated]
+  { id: "s126", name: "冷やし中華(大盛)", brand: "日高屋", calories: 770, protein: 25, fat: 20, carbs: 120 }, // estimated, scaled from 並盛
+  { id: "s127", name: "肉そば(大盛)", brand: "日高屋", calories: 728, protein: 31, fat: 22, carbs: 98 }, // estimated, scaled from 並盛
 ];
