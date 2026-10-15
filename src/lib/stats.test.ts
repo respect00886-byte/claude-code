@@ -10,6 +10,7 @@ import {
   groupSets,
   personalBest,
   volume,
+  weeklyProgress,
 } from './stats'
 
 let id = 0
@@ -136,5 +137,52 @@ describe('stats', () => {
       { date: '2026-09-01', volume: 1100, sets: 2 },
       { date: '2026-09-03', volume: 600, sets: 1 },
     ])
+  })
+
+  describe('weeklyProgress', () => {
+    // 2026-10-15 は木曜。今週は 10/12(月)〜10/18(日)
+    const today = '2026-10-15'
+
+    it('returns zero when there is no record', () => {
+      expect(weeklyProgress([], today, 2)).toEqual({ thisWeek: 0, streak: 0 })
+    })
+
+    it('counts days, not sets', () => {
+      expect(weeklyProgress(['2026-10-13', '2026-10-13'], today, 2)).toEqual({
+        thisWeek: 1,
+        streak: 0,
+      })
+    })
+
+    it('counts this week once the goal is reached', () => {
+      expect(weeklyProgress(['2026-10-12', '2026-10-14'], today, 2)).toEqual({
+        thisWeek: 2,
+        streak: 1,
+      })
+    })
+
+    it('keeps the streak while this week is not reached yet', () => {
+      const dates = [
+        '2026-09-21',
+        '2026-09-24',
+        '2026-09-28',
+        '2026-10-04',
+        '2026-10-05',
+        '2026-10-09',
+      ]
+      expect(weeklyProgress([...dates, '2026-10-13'], today, 2)).toEqual({ thisWeek: 1, streak: 3 })
+    })
+
+    it('stops at a week below the goal', () => {
+      const dates = ['2026-09-21', '2026-09-24', '2026-09-28', '2026-10-05', '2026-10-09']
+      expect(weeklyProgress(dates, today, 2).streak).toBe(1)
+    })
+
+    it('uses the given goal', () => {
+      const dates = ['2026-10-05', '2026-10-09', '2026-10-12', '2026-10-14']
+      expect(weeklyProgress(dates, today, 2).streak).toBe(2)
+      expect(weeklyProgress(dates, today, 3).streak).toBe(0)
+      expect(weeklyProgress(dates, today, 1).streak).toBe(2)
+    })
   })
 })

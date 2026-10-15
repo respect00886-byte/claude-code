@@ -36,7 +36,7 @@ export default function SettingsPage() {
     sets: await db.workoutSets.count(),
     weights: await db.bodyWeights.count(),
   }))
-  const { unit } = useSettings()
+  const { unit, weeklyGoal } = useSettings()
   const [editing, setEditing] = useState<Editing>({ kind: 'closed' })
   const [message, setMessage] = useState<Message>()
   const [lastBackup, setLastBackup] = useState(getLastBackupAt)
@@ -159,6 +159,26 @@ export default function SettingsPage() {
             {(['kg', 'lb'] as const).map((u) => (
               <Chip key={u} active={unit === u} onClick={() => updateSettings({ unit: u })}>
                 {u === 'kg' ? 'kg（キログラム）' : 'lb（ポンド）'}
+              </Chip>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-line bg-surface p-4">
+          <h2 className="font-bold">週の目標</h2>
+          <p className="mt-1 mb-3 text-sm text-muted">
+            週（月曜はじまり）に何日トレーニングしたら達成にするかを選びます。今日の画面に「今週 ◯/
+            {weeklyGoal}回」「◯週連続」と表示されます。
+          </p>
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <Chip
+                key={n}
+                active={weeklyGoal === n}
+                label={`週${n}回`}
+                onClick={() => updateSettings({ weeklyGoal: n })}
+              >
+                {n}回
               </Chip>
             ))}
           </div>

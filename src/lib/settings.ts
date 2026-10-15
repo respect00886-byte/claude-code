@@ -5,9 +5,11 @@ export type WeightUnit = 'kg' | 'lb'
 export interface Settings {
   /** 重量の表示・入力の単位 (保存は常に kg) */
   unit: WeightUnit
+  /** 週に何日トレーニングしたら「達成」とするか (1〜7) */
+  weeklyGoal: number
 }
 
-export const DEFAULT_SETTINGS: Settings = { unit: 'kg' }
+export const DEFAULT_SETTINGS: Settings = { unit: 'kg', weeklyGoal: 2 }
 
 const KEY = 'gymlog:settings'
 
@@ -17,6 +19,8 @@ export function sanitizeSettings(v: unknown): Settings {
   if (typeof v !== 'object' || v === null) return s
   const o = v as Record<string, unknown>
   if (o.unit === 'kg' || o.unit === 'lb') s.unit = o.unit
+  const g = o.weeklyGoal
+  if (typeof g === 'number' && Number.isInteger(g) && g >= 1 && g <= 7) s.weeklyGoal = g
   return s
 }
 

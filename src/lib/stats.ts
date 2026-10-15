@@ -5,6 +5,7 @@ import {
   type ExerciseKind,
   type WorkoutSet,
 } from '../db/db'
+import { addDays, weekStart } from './date'
 import { getSettings, type WeightUnit } from './settings'
 import { displayWeight, toUnit } from './units'
 
@@ -185,4 +186,31 @@ export function categoryDailyStats(
     byDate.set(s.date, row)
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+}
+
+export interface WeeklyProgress {
+  /** 今週トレーニングした日数 */
+  thisWeek: number
+  /** 目標を達成した週が何週続いているか */
+  streak: number
+}
+
+/**
+ * 週ごとの目標の達成状況。dates は記録のある日付 (重複可)。
+ * 今週がまだ未達成でも先週まで続いていれば連続は切らない (週の途中で 0 にしないため)
+ */
+export function weeklyProgress(dates: string[], today: string, goal: number): WeeklyProgress {
+  const days = new Map<string, Set<string>>()
+  for (const d of dates) {
+    const w = weekStart(d)
+    const set = days.get(w) ?? new Set()
+    set.add(d)
+    days.set(w, set)
+  }
+  const countOf = (week: string) => days.get(week)?.size ?? 0
+  const current = weekStart(today)
+  const thisWeek = countOf(current)
+  let streak = thisWeek >= goal ? 1 : 0
+  for (let w = addDays(current, -7); countOf(w) >= goal; w = addDays(w, -7)) streak++
+  return { thisWeek, streak }
 }
