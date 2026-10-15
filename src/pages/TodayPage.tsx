@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Copy,
   Dumbbell,
+  Flame,
   History,
   ListChecks,
   NotebookPen,
@@ -35,7 +36,7 @@ import {
 } from '../db/menu'
 import { addDays, formatDate, isDateKey } from '../lib/date'
 import { useToday } from '../lib/useToday'
-import type { WeightUnit } from '../lib/settings'
+import { useSettings, type WeightUnit } from '../lib/settings'
 import { showToast, showUndoToast } from '../lib/toast'
 import {
   byInputOrder,
@@ -43,6 +44,7 @@ import {
   fmtVolume,
   volume,
   volumeByCategory,
+  weeklyProgress,
   type SetGroup,
 } from '../lib/stats'
 import PageHeader from '../components/PageHeader'
@@ -109,6 +111,14 @@ export default function TodayPage() {
   const date = param && isDateKey(param) && param <= today ? param : today
   const isToday = date === today
   const setDate = (d: string) => setParams(d === today ? {} : { date: d }, { replace: true })
+
+  const { weeklyGoal } = useSettings()
+  // 記録のある日付だけを日付の索引から取り出す (セット全件を読まずに済む)
+  const workoutDates = useLiveQuery(
+    () => db.workoutSets.orderBy('date').uniqueKeys() as Promise<string[]>,
+    [],
+  )
+  const weekly = workoutDates && weeklyProgress(workoutDates, today, weeklyGoal)
 
   const [sheet, setSheet] = useState<SheetState>({ kind: 'closed' })
   const [dirty, setDirty] = useState(false)
@@ -259,13 +269,18 @@ export default function TodayPage() {
           </span>
         }
         right={
-          allSets.length > 0 && (
-            <span className="text-right text-xs leading-tight text-muted">
-              {allSets.length}セット
-              <br />
-              <span className="tabular-nums">{fmtVolume(totalVolume)}</span>
-            </span>
-          )
+          <span className="flex items-center gap-3">
+            {isToday && weekly && (
+              <WeeklyBadge thisWeek={weekly.thisWeek} goal={weeklyGoal} streak={weekly.streak} />
+            )}
+            {allSets.length > 0 && (
+              <span className="text-right text-xs leading-tight text-muted">
+                {allSets.length}セット
+                <br />
+                <span className="tabular-nums">{fmtVolume(totalVolume)}</span>
+              </span>
+            )}
+          </span>
         }
       />
 
@@ -478,6 +493,39 @@ export default function TodayPage() {
 }
 
 /** その日のメニュー (記録＋予定) をルーティンとして保存する */
+/** 今週の回数と、目標を達成し続けている週の数 */
+function WeeklyBadge({
+  thisWeek,
+  goal,
+  streak,
+}: {
+  thisWeek: number
+  goal: number
+  streak: number
+}) {
+  const done = thisWeek >= goal
+  return (
+    <span
+      className={`flex items-center gap-1 rounded-xl px-2 py-1 text-xs leading-tight ${
+        done ? 'bg-accent/15 text-accent' : 'bg-surface-2 text-muted'
+      }`}
+    >
+      <Flame size={18} className="shrink-0" />
+      <span>
+        <span className="font-bold tabular-nums">
+          今週 {thisWeek}/{goal}回{done && ' ✓'}
+        </span>
+        {streak > 0 && (
+          <>
+            <br />
+            <span className="tabular-nums">{streak}週連続</span>
+          </>
+        )}
+      </span>
+    </span>
+  )
+}
+
 function SaveRoutineSheet({ date, onDone }: { date: string; onDone: () => void }) {
   const data = useLiveQuery(async () => {
     const menu = await menuOfDay(date)

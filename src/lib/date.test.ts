@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, isDateKey } from './date'
+import { addDays, isDateKey, weekStart } from './date'
 
 describe('date', () => {
   it('isDateKey accepts only real YYYY-MM-DD dates', () => {
@@ -13,5 +13,13 @@ describe('date', () => {
   it('addDays crosses month and year boundaries', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
+  })
+
+  it('weekStart returns the Monday of the week', () => {
+    expect(weekStart('2026-10-15')).toBe('2026-10-12') // 木曜
+    expect(weekStart('2026-10-12')).toBe('2026-10-12') // 月曜
+    expect(weekStart('2026-10-18')).toBe('2026-10-12') // 日曜は前の月曜
+    expect(weekStart('2026-03-01')).toBe('2026-02-23') // 月またぎ
+    expect(weekStart('2027-01-01')).toBe('2026-12-28') // 年またぎ
   })
 })

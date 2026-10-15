@@ -18,6 +18,13 @@ export function addDays(key: string, days: number): string {
   return toDateKey(new Date(y, m - 1, d + days))
 }
 
+/** その日を含む週の月曜日 (週は月曜はじまり) */
+export function weekStart(key: string): string {
+  const [y, m, d] = key.split('-').map(Number)
+  const dow = new Date(y, m - 1, d).getDay()
+  return addDays(key, -((dow + 6) % 7))
+}
+
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
 
 /** 9/28(月) 形式 */
