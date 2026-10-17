@@ -1,0 +1,269 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.lead {
+  margin: 6px 0 16px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+/* スマホは縦に1列、パソコンは入力と候補を左右に並べる */
+.layout {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.label {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.label em {
+  font-style: normal;
+  font-size: 0.75rem;
+  color: #fff;
+  background: #e5484d;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
+
+input[type="text"] {
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+}
+
+.chip {
+  min-height: 44px;
+  border-radius: 999px;
+}
+
+.chip.active {
+  background: #ff7a45;
+  border-color: #ff7a45;
+  color: #fff;
+  font-weight: bold;
+}
+
+.primary {
+  width: 100%;
+  min-height: 52px;
+  background: #ff7a45;
+  border-color: #ff7a45;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.primary:disabled {
+  background: #ccc;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 8px 0 0;
+}
+
+.candidates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidates li {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.copy-text {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.row-actions button {
+  flex: 1;
+  min-height: 44px;
+}
+
+/* POP表示：画面いっぱいに大きな文字で見せる */
+.pop-overlay {
+  position: fixed;
+  inset: 0;
+  background: #f5f5f5;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.pop-actions {
+  display: flex;
+  gap: 8px;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pop-actions button {
+  flex: 1;
+  min-height: 52px;
+}
+
+.pop-card {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  aspect-ratio: 297 / 210;
+  background: #fffbe6;
+  border: 8px solid #ff7a45;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.pop-copy {
+  margin: 0;
+  font-size: clamp(1.6rem, 6vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.35;
+  color: #d4380d;
+}
+
+/* 区切りごとのまとまりを、なるべく1行に収める */
+.pop-line {
+  display: inline-block;
+}
+
+.pop-name {
+  margin: 16px 0 0;
+  font-size: clamp(1rem, 3vw, 1.6rem);
+  font-weight: bold;
+  color: #333;
+}
+
+/* 印刷時はPOPだけを用紙いっぱい（A4横）に出す */
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .app {
+    padding: 0;
+    max-width: none;
+  }
+
+  .pop-overlay {
+    position: static;
+    padding: 0;
+    background: #fff;
+  }
+
+  .pop-card {
+    max-width: none;
+    width: 100%;
+    height: 188mm;
+    aspect-ratio: auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .pop-copy {
+    font-size: 54pt;
+  }
+
+  .pop-name {
+    font-size: 24pt;
+  }
+}
