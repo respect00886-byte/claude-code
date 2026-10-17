@@ -11,14 +11,15 @@
 
 ## リポジトリの構成
 
-1つのリポジトリに、独立した2つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
+1つのリポジトリに、独立した3つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
 
 | アプリ | 場所 | 内容 | 主な技術 | データ保存先 |
 | --- | --- | --- | --- | --- |
 | GymLog | ルート（`src/`） | 筋トレ・体重記録（PWA） | React 19 / TypeScript / Tailwind v4 / Dexie / Recharts | IndexedDB |
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
+| pop-maker | `pop-maker/` | 売り場POPのキャッチコピー作成 | React 18 / TypeScript / Vite 5 | localStorage（前回の入力のみ） |
 
-- 依存パッケージ（`package.json`）は**別々**です。meal-tracker の作業は `meal-tracker/` に移動してから行います。
+- 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker の作業はそれぞれのフォルダに移動してから行います。
 - 詳しい機能説明は `README.md` と `meal-tracker/README.md` を参照してください。
 
 ### GymLog（`src/`）
@@ -34,6 +35,11 @@
 - `src/data/` … チェーン店メニュー（`starterMenu.ts`）、一般食品の目安（`genericFoods.ts`）
 - `src/lib/` … カロリー計算・基礎代謝・検索・保存処理
 - テストと lint の設定はありません。
+
+### pop-maker（`pop-maker/`）
+
+- AI は使わず、`src/data/templates.ts` の「文のひな形」に商品名（`{商品}`）・特徴（`{特徴}`）を当てはめて候補を作ります（`src/lib/generate.ts`）。
+- 書き方は meal-tracker と同じ（ダブルクォート＋セミコロン）。ルートの `npm run lint` の対象にも入ります。
 
 ## よく使うコマンド
 
@@ -53,6 +59,12 @@ meal-tracker:
 cd meal-tracker && npm install && npm run build
 ```
 
+pop-maker:
+
+```bash
+cd pop-maker && npm install && npm run build
+```
+
 作業後は、変更したアプリに応じて上記の lint / テスト / ビルドが通ることを確認してください。
 
 ## コードの書き方
@@ -66,4 +78,5 @@ cd meal-tracker && npm install && npm run build
 - `main` に変更が入ると `.github/workflows/deploy.yml` が lint → テスト → 両アプリのビルドを行い、自動公開します。
   - GymLog: https://respect00886-byte.github.io/claude-code/
   - meal-tracker: https://respect00886-byte.github.io/claude-code/meal-tracker/
-- 2つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。
+  - pop-maker: https://respect00886-byte.github.io/claude-code/pop-maker/
+- 3つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker / pop-maker を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。
