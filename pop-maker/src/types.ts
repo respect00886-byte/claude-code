@@ -1,3 +1,5 @@
+import type { BackgroundId } from "./data/backgrounds";
+
 export type Target = "kids" | "adult" | "fan" | "gift";
 export type Tone = "genki" | "yasashii" | "jouhin";
 
@@ -6,6 +8,9 @@ export interface PopInput {
   features: string[];
   target: Target;
   tone: Tone;
+  category?: string; // 特徴の候補を出す商品の種類（data/featureSuggestions.ts の id）
+  notices: string[]; // POPの上に帯で出すお知らせ
+  background?: BackgroundId;
 }
 
 export const TARGET_LABELS: Record<Target, string> = {
