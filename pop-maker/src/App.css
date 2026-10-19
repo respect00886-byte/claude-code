@@ -250,12 +250,13 @@ button {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-/* 印刷時はPOPだけを用紙いっぱい（A4横）に出す */
-@page {
-  size: A4 landscape;
-  margin: 10mm;
+/* 縦長のPOPは横幅いっぱいだと画面からはみ出すので、高さで抑える */
+.pop-canvas.portrait {
+  width: auto;
+  max-height: 80vh;
 }
 
+/* 印刷時はPOPだけを出す。用紙の向きと大きさは App.tsx でサイズごとに指定する */
 @media print {
   body {
     background: #fff;
@@ -276,11 +277,10 @@ button {
     background: #fff;
   }
 
-  /* A4横（余白10mm）に収まるよう高さで合わせる */
-  .pop-canvas {
+  .pop-canvas,
+  .pop-canvas.portrait {
     max-width: none;
-    width: auto;
-    height: 188mm;
+    max-height: none;
     border-radius: 0;
     box-shadow: none;
   }
