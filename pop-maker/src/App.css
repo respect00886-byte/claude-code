@@ -110,6 +110,45 @@ button {
   font-weight: bold;
 }
 
+.sub-label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: -4px;
+}
+
+/* 特徴の候補：種類ボタンと見分けやすいよう、少し小さく背景色を付ける */
+.suggestions {
+  background: #fff7f0;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.chip.small {
+  font-size: 0.95rem;
+  padding: 8px 12px;
+}
+
+.chip:disabled {
+  color: #bbb;
+  cursor: not-allowed;
+}
+
+/* お知らせはPOP上の帯と同じ赤色にする */
+.chip.notice.active {
+  background: #e5484d;
+  border-color: #e5484d;
+}
+
+.swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
 .primary {
   width: 100%;
   min-height: 52px;
@@ -183,45 +222,32 @@ button {
   margin: 0 auto;
 }
 
+/* スマホ幅でもボタン3つの文字が1行に収まるよう、左右の余白を詰める */
 .pop-actions button {
   flex: 1;
   min-height: 52px;
+  padding: 10px 6px;
+  white-space: nowrap;
 }
 
-.pop-card {
+.pop-backgrounds {
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
-  aspect-ratio: 297 / 210;
-  background: #fffbe6;
-  border: 8px solid #ff7a45;
-  border-radius: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  text-align: center;
+  gap: 8px;
 }
 
-.pop-copy {
-  margin: 0;
-  font-size: clamp(1.6rem, 6vw, 3.4rem);
-  font-weight: 900;
-  line-height: 1.35;
-  color: #d4380d;
-}
-
-/* 区切りごとのまとまりを、なるべく1行に収める */
-.pop-line {
-  display: inline-block;
-}
-
-.pop-name {
-  margin: 16px 0 0;
-  font-size: clamp(1rem, 3vw, 1.6rem);
-  font-weight: bold;
-  color: #333;
+/* 画像そのものを縮小して見せる（保存される画像と同じ見た目） */
+.pop-canvas {
+  display: block;
+  max-width: 720px;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 /* 印刷時はPOPだけを用紙いっぱい（A4横）に出す */
@@ -250,20 +276,12 @@ button {
     background: #fff;
   }
 
-  .pop-card {
+  /* A4横（余白10mm）に収まるよう高さで合わせる */
+  .pop-canvas {
     max-width: none;
-    width: 100%;
+    width: auto;
     height: 188mm;
-    aspect-ratio: auto;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .pop-copy {
-    font-size: 54pt;
-  }
-
-  .pop-name {
-    font-size: 24pt;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
