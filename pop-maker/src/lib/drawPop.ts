@@ -1,5 +1,6 @@
 import type { Background } from "../data/backgrounds";
 import type { PopSize } from "../data/sizes";
+import { BREAK, plainText } from "./generate";
 
 // 描くときは「短い辺＝1240」の目盛りで位置や大きさを決め、最後に実際の画素数へ拡大する。
 // こうするとどのサイズでも余白・模様・文字のつり合いが同じになる
@@ -14,13 +15,64 @@ export interface PopDrawing {
   text: string;
   name: string; // 文に商品名が入っていないときだけ下に添える
   notices: string[];
+  features: string[]; // 「速乾インク」などの特徴は、入るかぎり途中で改行しない
   background: Background;
   size: PopSize;
 }
 
-// 「！」「、」「。」の後ろで区切り、POPで単語の途中から改行されにくくする
+// 「！」「、」「。」の後ろと、ひな形で決めた区切り（BREAK）で分ける。どこで改行しても自然な位置
 export function splitLines(text: string): string[] {
-  return text.split(/(?<=[！、。])/).filter((s) => s !== "");
+  return text
+    .split(BREAK)
+    .flatMap((s) => s.split(/(?<=[！、。])/))
+    .filter((s) => s !== "");
+}
+
+type CharKind = "kanji" | "kana" | "katakana" | "other";
+
+function charKind(c: string): CharKind {
+  if (/\p{Script=Han}/u.test(c)) return "kanji";
+  if (/[\p{Script=Katakana}ー]/u.test(c)) return "katakana";
+  if (/\p{Script=Hiragana}/u.test(c)) return "kana";
+  return "other";
+}
+
+// 区切りの間の文が長すぎるときだけ使う、もう一段細かい区切り。
+// 商品名などは「キラキラ｜消せる｜ボールペン」のように文字の種類が変わる所で分ける。
+// ひらがな→漢字（「ひと｜息」「お｜子さま」）は言葉の途中のことが多いので分けない。
+// カタカナの後の漢字1文字（「ラメ｜入り」「ゴムバンド｜付き」）も分けない。
+// keep に入っている言葉（特徴）の中も分けない
+function splitWords(seg: string, keep: string[]): string[] {
+  const chars = [...seg];
+  const kept = new Set<number>();
+  for (const word of keep) {
+    const len = [...word].length;
+    for (let i = 0; i + len <= chars.length; i++) {
+      if (chars.slice(i, i + len).join("") === word) {
+        for (let j = i + 1; j < i + len; j++) kept.add(j);
+      }
+    }
+  }
+  const words: string[] = [];
+  let start = 0;
+  for (let i = 1; i < chars.length; i++) {
+    if (NO_LINE_START.includes(chars[i]) || kept.has(i)) continue;
+    const prev = charKind(chars[i - 1]);
+    const cur = charKind(chars[i]);
+    const toKatakana = cur === "katakana" || cur === "other";
+    const fromKatakana = prev === "katakana" || prev === "other";
+    const kanjiRun = cur === "kanji" && i + 1 < chars.length && charKind(chars[i + 1]) === "kanji";
+    if (
+      (prev === "kana" && toKatakana) ||
+      (prev === "kanji" && toKatakana) ||
+      (fromKatakana && kanjiRun)
+    ) {
+      words.push(chars.slice(start, i).join(""));
+      start = i;
+    }
+  }
+  words.push(chars.slice(start).join(""));
+  return words;
 }
 
 function roundRect(
@@ -153,41 +205,70 @@ function drawBackground(ctx: CanvasRenderingContext2D, bg: Background, w: number
   }
 }
 
-// 区切りごとのまとまりをなるべく1行に収め、それでも入らないときだけ1文字ずつ折り返す
-function wrap(ctx: CanvasRenderingContext2D, segments: string[], maxWidth: number): string[] {
+// 言葉を順に詰めて、limit の幅を超えたら次の行にする
+function pack(words: string[], width: (s: string) => number, limit: number): string[] {
   const lines: string[] = [];
   let current = "";
-  const fits = (s: string) => ctx.measureText(s).width <= maxWidth;
+  for (const word of words) {
+    if (current !== "" && width(current + word) > limit) {
+      lines.push(current);
+      current = word;
+    } else {
+      current += word;
+    }
+  }
+  if (current !== "") lines.push(current);
+  return lines;
+}
+
+// 同じ行数のまま各行の長さをそろえ、最後の行に短い言葉だけが残らないようにする
+function balance(words: string[], width: (s: string) => number, maxWidth: number): string[] {
+  const count = pack(words, width, maxWidth).length;
+  let lo = Math.max(...words.map(width));
+  let hi = maxWidth;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (pack(words, width, mid).length <= count) hi = mid;
+    else lo = mid;
+  }
+  return pack(words, width, hi);
+}
+
+// 区切りごとのまとまりをなるべく1行に収め、入らないときだけ言葉の切れ目で折り返す。
+// 言葉そのものが入らないときは null を返し、文字を小さくしてもらう。
+// 一番小さい文字でも入らないとき（allowCharBreak）だけ、しかたなく1文字ずつ折り返す
+function wrap(
+  ctx: CanvasRenderingContext2D,
+  segments: string[],
+  maxWidth: number,
+  keep: string[],
+  allowCharBreak: boolean,
+): string[] | null {
+  const width = (s: string) => ctx.measureText(s).width;
+  const lines: string[] = [];
+  let current = "";
 
   for (const seg of segments) {
-    if (fits(current + seg)) {
+    if (width(current + seg) <= maxWidth) {
       current += seg;
       continue;
     }
     if (current !== "") lines.push(current);
-    if (fits(seg)) {
+    if (width(seg) <= maxWidth) {
       current = seg;
       continue;
     }
-    // 1行に入らないまとまりは、最後の行に1〜2文字だけ残らないよう同じくらいの長さに分ける
-    // （縦長のPOPで「プ！」だけが最後の行に残るのを防ぐ）
-    const chars = [...seg];
-    for (let n = 2; n <= chars.length; n++) {
-      const chunks: string[] = [];
-      let start = 0;
-      for (let k = 1; k <= n; k++) {
-        let end = Math.round((chars.length * k) / n);
-        // 「！」「ッ」「ー」などが行の頭に来ないよう、区切りを1文字前にずらす
-        if (end < chars.length && NO_LINE_START.includes(chars[end]) && end - 1 > start) end--;
-        chunks.push(chars.slice(start, end).join(""));
-        start = end;
-      }
-      if (chunks.every(fits)) {
-        lines.push(...chunks.slice(0, -1));
-        current = chunks[chunks.length - 1];
-        break;
-      }
+    let words = splitWords(seg, keep);
+    if (words.some((word) => width(word) > maxWidth)) {
+      if (!allowCharBreak) return null;
+      // 一番小さい文字でも入らないときだけ、特徴の中 → 1文字ずつ の順で分ける
+      words = words
+        .flatMap((word) => (width(word) > maxWidth ? splitWords(word, []) : [word]))
+        .flatMap((word) => (width(word) > maxWidth ? [...word] : [word]));
     }
+    const chunks = balance(words, width, maxWidth);
+    lines.push(...chunks.slice(0, -1));
+    current = chunks[chunks.length - 1];
   }
   if (current !== "") lines.push(current);
   return lines;
@@ -273,7 +354,7 @@ export function drawPop(canvas: HTMLCanvasElement, pop: PopDrawing) {
   ctx.textBaseline = "middle";
 
   const name = pop.name.trim();
-  if (name !== "" && !pop.text.includes(name)) {
+  if (name !== "" && !plainText(pop.text).includes(name)) {
     const size = fitFont(ctx, name, 72, 700, maxWidth);
     ctx.fillStyle = "#333333";
     ctx.fillText(name, w / 2, bottom - size / 2);
@@ -284,10 +365,12 @@ export function drawPop(canvas: HTMLCanvasElement, pop: PopDrawing) {
   const segments = splitLines(pop.text);
   let size = 230;
   let lines: string[] = [];
-  for (; size >= 48; size -= 6) {
+  for (; ; size -= 6) {
+    const smallest = size - 6 < 48;
     ctx.font = `900 ${size}px ${FONT}`;
-    lines = wrap(ctx, segments, maxWidth);
-    if (lines.length * size * 1.3 <= bottom - top) break;
+    const result = wrap(ctx, segments, maxWidth, pop.features, smallest);
+    if (result) lines = result;
+    if (smallest || (result && result.length * size * 1.3 <= bottom - top)) break;
   }
 
   const lineHeight = size * 1.3;

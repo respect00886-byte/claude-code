@@ -4,7 +4,7 @@ import { FEATURE_CATEGORIES } from "./data/featureSuggestions";
 import { NOTICES } from "./data/notices";
 import { findSize, POP_SIZES, printLayout } from "./data/sizes";
 import { drawPop, popFileName, savePng } from "./lib/drawPop";
-import { generate } from "./lib/generate";
+import { generate, plainText } from "./lib/generate";
 import { loadInput, saveInput } from "./lib/storage";
 import { TARGET_LABELS, TONE_LABELS } from "./types";
 import type { PopInput, Target, Tone } from "./types";
@@ -60,12 +60,24 @@ export default function App() {
   // お知らせは選んだ順ではなく、いつも同じ並び順で出す
   const notices = useMemo(() => NOTICES.filter((n) => input.notices.includes(n)), [input.notices]);
 
+  const features = useMemo(
+    () => input.features.map((f) => f.trim()).filter((f) => f !== ""),
+    [input.features],
+  );
+
   // プレビューと保存画像を同じキャンバスで描くので、画面で見たものがそのまま画像になる
   useEffect(() => {
     if (popText && canvasRef.current) {
-      drawPop(canvasRef.current, { text: popText, name: input.name, notices, background, size });
+      drawPop(canvasRef.current, {
+        text: popText,
+        name: input.name,
+        notices,
+        features,
+        background,
+        size,
+      });
     }
-  }, [popText, input.name, notices, background, size]);
+  }, [popText, input.name, notices, features, background, size]);
 
   function update(next: Partial<PopInput>) {
     const merged = { ...input, ...next };
@@ -107,7 +119,7 @@ export default function App() {
   }
 
   async function handleCopy(text: string) {
-    if (await copyText(text)) {
+    if (await copyText(plainText(text))) {
       setCopied(text);
     } else {
       alert("コピーできませんでした。文字を長押しして選択してください。");
@@ -332,7 +344,7 @@ export default function App() {
           <canvas
             ref={canvasRef}
             className={size.widthMm < size.heightMm ? "pop-canvas portrait" : "pop-canvas"}
-            aria-label={popText}
+            aria-label={plainText(popText)}
           />
         </div>
       )}

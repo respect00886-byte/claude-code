@@ -5,6 +5,14 @@ import type { PopInput } from "../types";
 export const MAX_LENGTH = 25;
 const COUNT = 8;
 
+// ひな形の「/」（行を変えてよい位置）を、画面に出ない文字にして候補の中に残す。
+// POPに描くときはこの位置で改行し、コピーするときは取り除く
+export const BREAK = "\u200b";
+
+export function plainText(text: string): string {
+  return text.split(BREAK).join("");
+}
+
 function shuffle<T>(items: T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -43,7 +51,8 @@ export function buildAll(input: PopInput): string[] {
     if (!t.tones.includes(input.tone)) continue;
     if (t.targets && !t.targets.includes(input.target)) continue;
 
-    const filled = t.text.replace(/\{商品\}/g, name);
+    // 商品名に「/」が入っていても区切りと間違えないよう、先に置き換えておく
+    const filled = t.text.replace(/\//g, BREAK).replace(/\{商品\}/g, name);
     if (filled.includes("{特徴")) {
       // 特徴が複数あれば、それぞれで1文ずつ作る
       for (const f of features) results.add(fillFeature(filled, f));
@@ -57,7 +66,7 @@ export function buildAll(input: PopInput): string[] {
 // 候補をランダムに選ぶ。短い文を優先し、長すぎる文は足りないときだけ使う
 export function generate(input: PopInput): string[] {
   const all = shuffle(buildAll(input));
-  const short = all.filter((s) => s.length <= MAX_LENGTH);
-  const long = all.filter((s) => s.length > MAX_LENGTH);
+  const short = all.filter((s) => plainText(s).length <= MAX_LENGTH);
+  const long = all.filter((s) => plainText(s).length > MAX_LENGTH);
   return [...short, ...long].slice(0, COUNT);
 }
