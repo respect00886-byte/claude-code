@@ -6,6 +6,8 @@
 > このリポジトリには、食事管理アプリ（[meal-tracker/](./meal-tracker/)）も含まれています。公開URL: https://respect00886-byte.github.io/claude-code/meal-tracker/ ／ 使い方は[meal-tracker/README.md](./meal-tracker/README.md)を参照してください。
 >
 > 売り場のPOP作成ツール（[pop-maker/](./pop-maker/)）も含まれています。公開URL: https://respect00886-byte.github.io/claude-code/pop-maker/ ／ 使い方は[pop-maker/README.md](./pop-maker/README.md)を参照してください。
+>
+> 在庫があと何日もつか計算するページ（[stock-days/](./stock-days/)）も含まれています。公開URL: https://respect00886-byte.github.io/claude-code/stock-days/ ／ 使い方は[stock-days/README.md](./stock-days/README.md)を参照してください。
 
 ## 主な機能
 

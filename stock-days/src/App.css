@@ -1,0 +1,260 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.lead {
+  margin: 6px 0 16px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.label {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.label small {
+  font-weight: normal;
+  color: #888;
+}
+
+/* スマホで拡大されないよう、入力欄の文字は16px以上にする */
+input {
+  font-size: 16px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  font-family: inherit;
+  background: #fff;
+  color: inherit;
+}
+
+/* 「過去 [7] 日で [21] 個」のように、文の中に数字の欄を置く */
+.inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline input {
+  width: 6em;
+  text-align: right;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+button {
+  font-size: 1rem;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.toggle {
+  display: flex;
+}
+
+.toggle button {
+  flex: 1;
+}
+
+.toggle button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.toggle button:last-child {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.toggle .on {
+  background: #d4380d;
+  border-color: #d4380d;
+  color: #fff;
+  font-weight: bold;
+}
+
+.error {
+  color: #cf1322;
+  font-weight: bold;
+  margin: 0 0 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions .primary {
+  flex: 1;
+  min-height: 52px;
+  background: #d4380d;
+  border-color: #d4380d;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.05rem;
+}
+
+.list-title {
+  margin: 24px 0 12px;
+}
+
+.empty {
+  color: #888;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 危険度は左の太い線とラベルの色で、ひと目で分かるようにする */
+.item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-left: 8px solid #bbb;
+}
+
+.item.danger {
+  border-left-color: #e5484d;
+  background: #fff1f0;
+}
+
+.item.warn {
+  border-left-color: #f5a623;
+  background: #fffbe6;
+}
+
+.item.ok {
+  border-left-color: #389e0d;
+}
+
+.item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #fff;
+  background: #999;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.danger .badge {
+  background: #e5484d;
+}
+
+.warn .badge {
+  background: #d48806;
+}
+
+.ok .badge {
+  background: #389e0d;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.days {
+  margin: 10px 0 4px;
+  font-size: 1rem;
+}
+
+.days strong {
+  font-size: 1.6rem;
+}
+
+.date {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.order {
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.danger .order {
+  color: #cf1322;
+}
+
+.detail {
+  margin: 6px 0 10px;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.item-actions button {
+  flex: 1;
+}
+
+.item-actions .delete {
+  flex: 0 0 auto;
+  color: #999;
+}

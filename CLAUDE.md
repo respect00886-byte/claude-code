@@ -11,15 +11,16 @@
 
 ## リポジトリの構成
 
-1つのリポジトリに、独立した3つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
+1つのリポジトリに、独立した4つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
 
 | アプリ | 場所 | 内容 | 主な技術 | データ保存先 |
 | --- | --- | --- | --- | --- |
 | GymLog | ルート（`src/`） | 筋トレ・体重記録（PWA） | React 19 / TypeScript / Tailwind v4 / Dexie / Recharts | IndexedDB |
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
 | pop-maker | `pop-maker/` | 売り場POP作成（見出し・補足文を入力） | React 18 / TypeScript / Vite 5 | localStorage（前回の入力・マイフレーズ・まとめて印刷の一覧） |
+| stock-days | `stock-days/` | 在庫があと何日もつか・発注の目安を計算 | React 18 / TypeScript / Vite 5 | localStorage（商品の一覧） |
 
-- 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker の作業はそれぞれのフォルダに移動してから行います。
+- 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker / stock-days の作業はそれぞれのフォルダに移動してから行います。
 - 詳しい機能説明は `README.md` と `meal-tracker/README.md` を参照してください。
 
 ### GymLog（`src/`）
@@ -43,6 +44,12 @@
 - 名刺・A5は「まとめて印刷」でA4用紙に並べて印刷できます（並べ方は `src/lib/batch.ts`、画面は `src/BatchPrint.tsx`）。
 - サブ機能の自動生成は AI を使わず、`src/data/templates.ts` の「文のひな形」に商品名（`{商品}`）・特徴（`{特徴}`）を当てはめて候補を作ります（`src/lib/generate.ts`）。
 - 書き方は meal-tracker と同じ（ダブルクォート＋セミコロン）。ルートの `npm run lint` の対象にも入ります。
+
+### stock-days（`stock-days/`）
+
+- 計算は `src/lib/calc.ts`（1日の売れ数・残り日数・発注すべき日・色分け）、保存は `src/lib/storage.ts`。
+- 残り日数は少なめに見るため切り捨て。数えた日から日がたつと、そのぶん減らします。
+- 書き方は pop-maker と同じ（ダブルクォート＋セミコロン）。ルートの `npm run lint` の対象にも入ります。
 
 ## よく使うコマンド
 
@@ -68,6 +75,12 @@ pop-maker:
 cd pop-maker && npm install && npm run build
 ```
 
+stock-days:
+
+```bash
+cd stock-days && npm install && npm run build
+```
+
 作業後は、変更したアプリに応じて上記の lint / テスト / ビルドが通ることを確認してください。
 
 ## コードの書き方
@@ -78,8 +91,9 @@ cd pop-maker && npm install && npm run build
 
 ## 公開（GitHub Pages）
 
-- `main` に変更が入ると `.github/workflows/deploy.yml` が lint → テスト → 両アプリのビルドを行い、自動公開します。
+- `main` に変更が入ると `.github/workflows/deploy.yml` が lint → テスト → 各アプリのビルドを行い、自動公開します。
   - GymLog: https://respect00886-byte.github.io/claude-code/
   - meal-tracker: https://respect00886-byte.github.io/claude-code/meal-tracker/
   - pop-maker: https://respect00886-byte.github.io/claude-code/pop-maker/
-- 3つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker / pop-maker を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。
+  - stock-days: https://respect00886-byte.github.io/claude-code/stock-days/
+- 4つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker / pop-maker / stock-days を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。
