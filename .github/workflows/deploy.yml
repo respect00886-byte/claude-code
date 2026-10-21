@@ -40,6 +40,11 @@ jobs:
       - run: npm run build
         working-directory: pop-maker
       - run: mkdir -p dist/pop-maker && cp -r pop-maker/dist/. dist/pop-maker/
+      - run: npm ci
+        working-directory: zaiko-check
+      - run: npm run build
+        working-directory: zaiko-check
+      - run: mkdir -p dist/zaiko-check && cp -r zaiko-check/dist/. dist/zaiko-check/
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

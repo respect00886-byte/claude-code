@@ -14,10 +14,10 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icons/icon.svg'],
       workbox: {
-        // meal-tracker/ と pop-maker/ は同じPagesサイトに同居する別アプリなので、
+        // meal-tracker/ と pop-maker/ と zaiko-check/ は同じPagesサイトに同居する別アプリなので、
         // GymLogのService WorkerがそのナビゲーションをGymLog自身の
         // index.htmlにフォールバックさせないよう除外する
-        navigateFallbackDenylist: [/\/meal-tracker\//, /\/pop-maker\//],
+        navigateFallbackDenylist: [/\/meal-tracker\//, /\/pop-maker\//, /\/zaiko-check\//],
       },
       manifest: {
         name: 'GymLog - 筋トレ・体重記録',
