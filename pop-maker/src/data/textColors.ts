@@ -7,6 +7,9 @@ export interface TextColor {
   color: string;
 }
 
+// 補足文の標準の色。見出しの色に負けないよう、黒より少しやわらかい濃いグレーにしている
+export const SUB_DEFAULT_COLOR = "#333333";
+
 // 白っぽい背景の上でも遠くから読めるよう、どれも濃いめの色にしている
 export const TEXT_COLORS: TextColor[] = [
   { id: "black", label: "黒", color: "#1f1f1f" },

@@ -4,18 +4,26 @@ import { FEATURE_CATEGORIES } from "./data/featureSuggestions";
 import { NOTICES } from "./data/notices";
 import { PHRASE_CATEGORIES } from "./data/phrases";
 import { findSize, POP_SIZES, printLayout } from "./data/sizes";
-import { resolveTextColor, TEXT_COLORS } from "./data/textColors";
+import { resolveTextColor, SUB_DEFAULT_COLOR, TEXT_COLORS } from "./data/textColors";
 import type { TextColorId } from "./data/textColors";
+import BatchPrint from "./BatchPrint";
+import { findSheetLayout } from "./lib/batch";
+import type { BatchItem } from "./lib/batch";
 import { drawPop, popFileName, savePng } from "./lib/drawPop";
 import { generate, plainText } from "./lib/generate";
-import { loadInput, loadPhrases, saveInput, savePhrases } from "./lib/storage";
+import {
+  loadBatch,
+  loadInput,
+  loadPhrases,
+  saveBatch,
+  saveInput,
+  savePhrases,
+} from "./lib/storage";
 import type { MyPhrases } from "./lib/storage";
 import { TARGET_LABELS, TONE_LABELS } from "./types";
 import type { PopInput, Target, Tone } from "./types";
 
 const FEATURE_SLOTS = 3;
-// 補足文の標準の色。見出しの色に負けないよう、黒より少しやわらかい濃いグレーにしている
-const SUB_DEFAULT_COLOR = "#333333";
 
 const EMPTY_INPUT: PopInput = {
   heading: "",
@@ -59,6 +67,9 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [phrases, setPhrases] = useState<MyPhrases>(loadPhrases);
   const [phraseCategory, setPhraseCategory] = useState<string | null>(null);
+  const [batch, setBatch] = useState<BatchItem[]>(loadBatch);
+  const [showBatch, setShowBatch] = useState(false);
+  const [added, setAdded] = useState(false);
   const previewRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -70,6 +81,8 @@ export default function App() {
   const background = findBackground(input.background);
   const size = findSize(input.size);
   const print = printLayout(size);
+  const sheetLayout = findSheetLayout(size.id);
+  const batchCount = batch.reduce((sum, i) => sum + i.copies, 0);
   const headingColor = resolveTextColor(input.headingColor, background.text);
   const subColor = resolveTextColor(input.subColor, SUB_DEFAULT_COLOR);
   // お知らせは選んだ順ではなく、いつも同じ並び順で出す
@@ -175,6 +188,29 @@ export default function App() {
     } else {
       alert("コピーできませんでした。文字を長押しして選択してください。");
     }
+  }
+
+  function changeBatch(next: BatchItem[]) {
+    setBatch(next);
+    saveBatch(next);
+  }
+
+  // 今の原稿を、作ったときの見た目のまま「まとめて印刷」の一覧に入れる
+  function addToBatch() {
+    if (!sheetLayout) return;
+    const item: BatchItem = {
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      size: sheetLayout.size,
+      copies: 1,
+      heading: input.heading,
+      sub: input.sub,
+      notices,
+      background: background.id,
+      headingColor: input.headingColor,
+      subColor: input.subColor,
+    };
+    changeBatch([...batch, item]);
+    setAdded(true);
   }
 
   async function handleSave() {
@@ -437,6 +473,11 @@ export default function App() {
             >
               仕上げ・印刷・保存へ
             </button>
+            {batch.length > 0 && (
+              <button type="button" className="batch-open" onClick={() => setShowBatch(true)}>
+                まとめて印刷（{batchCount}枚）
+              </button>
+            )}
           </section>
         </div>
 
@@ -566,7 +607,13 @@ export default function App() {
       {showPop && (
         <div className="pop-overlay">
           <div className="pop-actions no-print">
-            <button type="button" onClick={() => setShowPop(false)}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowPop(false);
+                setAdded(false);
+              }}
+            >
               戻る
             </button>
             <button type="button" onClick={() => window.print()}>
@@ -584,12 +631,27 @@ export default function App() {
                   key={s.id}
                   type="button"
                   className={size.id === s.id ? "chip active" : "chip"}
-                  onClick={() => update({ size: s.id })}
+                  onClick={() => {
+                    update({ size: s.id });
+                    setAdded(false);
+                  }}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
+            {sheetLayout && (
+              <div className="batch-add">
+                <button type="button" onClick={addToBatch}>
+                  ＋ まとめて印刷に追加
+                </button>
+                <span className="hint">
+                  {added
+                    ? `追加しました（まとめて印刷：${batchCount}枚）。戻って次の原稿を作れます。`
+                    : `${sheetLayout.note}でまとめて印刷できます`}
+                </span>
+              </div>
+            )}
           </div>
           <div className="pop-backgrounds no-print">
             <span className="label">背景</span>
@@ -619,6 +681,10 @@ export default function App() {
             aria-label={plainText(`${input.heading} ${input.sub}`)}
           />
         </div>
+      )}
+
+      {showBatch && (
+        <BatchPrint items={batch} onChange={changeBatch} onClose={() => setShowBatch(false)} />
       )}
     </div>
   );

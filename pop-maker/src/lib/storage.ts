@@ -1,4 +1,5 @@
 import type { PopInput } from "../types";
+import type { BatchItem } from "./batch";
 
 const INPUT_KEY = "pop-maker:input";
 
@@ -43,6 +44,26 @@ export function loadPhrases(): MyPhrases {
 export function savePhrases(phrases: MyPhrases): void {
   try {
     localStorage.setItem(PHRASES_KEY, JSON.stringify(phrases));
+  } catch {
+    // 保存できない環境でも、開いている間は使えるようにする
+  }
+}
+
+const BATCH_KEY = "pop-maker:batch";
+
+// まとめて印刷の一覧。途中で閉じても続きから印刷できるよう残しておく
+export function loadBatch(): BatchItem[] {
+  try {
+    const raw = localStorage.getItem(BATCH_KEY);
+    return raw == null ? [] : (JSON.parse(raw) as BatchItem[]);
+  } catch {
+    return [];
+  }
+}
+
+export function saveBatch(items: BatchItem[]): void {
+  try {
+    localStorage.setItem(BATCH_KEY, JSON.stringify(items));
   } catch {
     // 保存できない環境でも、開いている間は使えるようにする
   }

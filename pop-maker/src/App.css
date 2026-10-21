@@ -388,6 +388,118 @@ button {
   max-height: 80vh;
 }
 
+/* ---- まとめて印刷 ---- */
+.batch-open {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 10px;
+  font-weight: bold;
+  color: #d4380d;
+  border-color: #ffbb96;
+}
+
+.batch-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 4px;
+}
+
+.batch-add button {
+  min-height: 44px;
+  font-weight: bold;
+  color: #d4380d;
+  border-color: #ffbb96;
+}
+
+.batch-add .hint {
+  margin: 0;
+}
+
+.batch-list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 720px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.batch-list li {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.batch-list img {
+  width: 100%;
+  height: auto;
+  border: 1px solid #eee;
+}
+
+.batch-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-copies {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.batch-copies button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.2rem;
+}
+
+.batch-remove,
+.batch-clear {
+  min-height: 44px;
+  color: #999;
+}
+
+.batch-clear {
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+
+.sheets {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* A4用紙1枚分。中の位置は割合で決めているので、画面では縮めて見本として見せる */
+.sheet {
+  position: relative;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 切る位置が分かるよう、1枚ずつ薄い点線で囲む */
+.sheet-cell {
+  position: absolute;
+  display: block;
+  outline: 1px dashed #bbb;
+}
+
 /* 印刷時はPOPだけを出す。用紙の向きと大きさは App.tsx でサイズごとに指定する */
 @media print {
   body {
@@ -407,6 +519,28 @@ button {
     position: static;
     padding: 0;
     background: #fff;
+  }
+
+  .sheets {
+    display: block;
+    max-width: none;
+    gap: 0;
+  }
+
+  /* 実物の寸法で印刷し、用紙1枚ごとに改ページする */
+  .sheet {
+    width: var(--sheet-w);
+    height: var(--sheet-h);
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .sheet:last-child {
+    break-after: auto;
+  }
+
+  .sheet-cell {
+    outline: 0.2mm dashed #bbb;
   }
 
   .pop-canvas,
