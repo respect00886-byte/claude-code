@@ -344,6 +344,8 @@ button {
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+  /* 少しでも横にはみ出すと、スマホで縦に動かしたとき画面が横にずれるので、横には動かさない */
+  overflow-x: hidden;
 }
 
 .pop-actions {
@@ -382,9 +384,11 @@ button {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-/* 縦長のPOPは横幅いっぱいだと画面からはみ出すので、高さで抑える */
+/* 縦長のPOPは横幅いっぱいだと画面からはみ出すので、高さで抑える。
+   高さから決まる横幅がスマホの画面幅を超えないよう、横幅にも上限を付ける */
 .pop-canvas.portrait {
   width: auto;
+  max-width: 100%;
   max-height: 80vh;
 }
 
