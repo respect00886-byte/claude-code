@@ -1,5 +1,6 @@
 import type { BackgroundId } from "./data/backgrounds";
 import type { PopSizeId } from "./data/sizes";
+import type { TextColorId } from "./data/textColors";
 
 export type Target = "kids" | "adult" | "fan" | "gift";
 export type Tone = "genki" | "yasashii" | "jouhin";
@@ -15,6 +16,8 @@ export interface PopInput {
   notices: string[]; // POPの上に帯で出すお知らせ
   background?: BackgroundId;
   size?: PopSizeId; // 保存・印刷する画像の大きさ（未設定なら A4横）
+  headingColor?: TextColorId; // 見出しの色（未設定なら背景に合わせる）
+  subColor?: TextColorId; // 補足文の色（未設定なら濃いグレー）
 }
 
 export const TARGET_LABELS: Record<Target, string> = {

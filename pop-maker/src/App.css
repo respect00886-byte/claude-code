@@ -40,13 +40,18 @@ h2 {
 @media (min-width: 760px) {
   .layout {
     grid-template-columns: 1fr 1fr;
-    align-items: start;
   }
 
-  /* パソコンでは入力しながら見られるよう、プレビューを画面に残す */
+  /* パソコンでは入力しながら見られるよう、プレビューを画面に残す。
+     右の列の高さを左の列にそろえておくと、サブ機能の手前で止まり、サブ機能に重ならない */
   .preview {
     position: sticky;
     top: 16px;
+  }
+
+  /* サブ機能はプレビューと重ならないよう、2列の下に横幅いっぱいで置く */
+  .sub-feature {
+    grid-column: 1 / -1;
   }
 }
 
@@ -250,6 +255,20 @@ button {
 .chip.notice.active {
   background: #e5484d;
   border-color: #e5484d;
+}
+
+/* 文字の色の見本。白い背景でも見えるよう、四角い色見本にする */
+.color-dot {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+.chip.active .color-dot {
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .swatch {

@@ -14,6 +14,8 @@ const NO_LINE_START = "！？、。ー〜ッャュョァィゥェォっゃゅょ
 export interface PopDrawing {
   heading: string; // 大きい文字の見出し
   sub: string; // 見出しの下に小さい文字で添える補足文
+  headingColor: string;
+  subColor: string;
   notices: string[];
   features: string[]; // 「速乾インク」などの特徴は、入るかぎり途中で改行しない
   background: Background;
@@ -208,6 +210,25 @@ function drawBackground(ctx: CanvasRenderingContext2D, bg: Background, w: number
       }
       break;
     }
+
+    // ---- おとなしい背景：細い枠だけ ----
+    case "plain":
+    case "gray":
+    case "navy":
+    case "beige":
+      ctx.strokeStyle = bg.pattern;
+      ctx.lineWidth = 8;
+      ctx.strokeRect(70, 70, w - 140, h - 140);
+      break;
+
+    case "formal":
+      // 掲示物の「お知らせ」文書のような、細い二重線の枠
+      ctx.strokeStyle = bg.pattern;
+      ctx.lineWidth = 10;
+      ctx.strokeRect(60, 60, w - 120, h - 120);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(90, 90, w - 180, h - 180);
+      break;
   }
 }
 
@@ -351,15 +372,15 @@ export function drawPop(canvas: HTMLCanvasElement, pop: PopDrawing) {
 
   // 見出しと補足文をひとかたまりにして、上下の真ん中に置く
   let y = (top + bottom) / 2 - (headHeight + subGap + subHeight) / 2;
-  ctx.fillStyle = pop.background.text;
+  ctx.fillStyle = pop.headingColor;
   ctx.font = `900 ${fit.headSize}px ${FONT}`;
   for (const line of fit.headLines) {
     ctx.fillText(line, w / 2, y + (fit.headSize * HEAD_LINE) / 2);
     y += fit.headSize * HEAD_LINE;
   }
   y += subGap;
-  // 補足文は見出しより控えめに見せるため、落ち着いた色・少し細い字にする
-  ctx.fillStyle = "#333333";
+  // 補足文は見出しより控えめに見せるため、少し細い字にする
+  ctx.fillStyle = pop.subColor;
   ctx.font = `700 ${fit.subSize}px ${FONT}`;
   for (const line of fit.subLines) {
     ctx.fillText(line, w / 2, y + (fit.subSize * SUB_LINE) / 2);

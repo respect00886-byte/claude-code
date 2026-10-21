@@ -4,6 +4,8 @@ import { FEATURE_CATEGORIES } from "./data/featureSuggestions";
 import { NOTICES } from "./data/notices";
 import { PHRASE_CATEGORIES } from "./data/phrases";
 import { findSize, POP_SIZES, printLayout } from "./data/sizes";
+import { resolveTextColor, TEXT_COLORS } from "./data/textColors";
+import type { TextColorId } from "./data/textColors";
 import { drawPop, popFileName, savePng } from "./lib/drawPop";
 import { generate, plainText } from "./lib/generate";
 import { loadInput, loadPhrases, saveInput, savePhrases } from "./lib/storage";
@@ -12,6 +14,8 @@ import { TARGET_LABELS, TONE_LABELS } from "./types";
 import type { PopInput, Target, Tone } from "./types";
 
 const FEATURE_SLOTS = 3;
+// 補足文の標準の色。見出しの色に負けないよう、黒より少しやわらかい濃いグレーにしている
+const SUB_DEFAULT_COLOR = "#333333";
 
 const EMPTY_INPUT: PopInput = {
   heading: "",
@@ -66,6 +70,8 @@ export default function App() {
   const background = findBackground(input.background);
   const size = findSize(input.size);
   const print = printLayout(size);
+  const headingColor = resolveTextColor(input.headingColor, background.text);
+  const subColor = resolveTextColor(input.subColor, SUB_DEFAULT_COLOR);
   // お知らせは選んだ順ではなく、いつも同じ並び順で出す
   const notices = useMemo(() => NOTICES.filter((n) => input.notices.includes(n)), [input.notices]);
 
@@ -76,10 +82,29 @@ export default function App() {
 
   // プレビューと保存画像は同じ描き方なので、画面で見たものがそのまま画像になる
   useEffect(() => {
-    const pop = { heading: input.heading, sub: input.sub, notices, features, background, size };
+    const pop = {
+      heading: input.heading,
+      sub: input.sub,
+      headingColor,
+      subColor,
+      notices,
+      features,
+      background,
+      size,
+    };
     if (previewRef.current) drawPop(previewRef.current, pop);
     if (showPop && canvasRef.current) drawPop(canvasRef.current, pop);
-  }, [showPop, input.heading, input.sub, notices, features, background, size]);
+  }, [
+    showPop,
+    input.heading,
+    input.sub,
+    headingColor,
+    subColor,
+    notices,
+    features,
+    background,
+    size,
+  ]);
 
   function update(next: Partial<PopInput>) {
     const merged = { ...input, ...next };
@@ -162,6 +187,48 @@ export default function App() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function backgroundChips(calm: boolean) {
+    return (
+      <div className="chips">
+        {BACKGROUNDS.filter((b) => !!b.calm === calm).map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            className={background.id === b.id ? "chip active" : "chip"}
+            onClick={() => update({ background: b.id })}
+          >
+            <span className="swatch" style={{ background: b.base, borderColor: b.pattern }} />
+            {b.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // 最初の「標準」は色を決めず（undefined）、背景を変えても合う色のままにする
+  function colorChips(key: "headingColor" | "subColor", autoLabel: string, autoColor: string) {
+    const options: { id: TextColorId | undefined; label: string; color: string }[] = [
+      { id: undefined, label: autoLabel, color: autoColor },
+      ...TEXT_COLORS,
+    ];
+    const current = TEXT_COLORS.some((c) => c.id === input[key]) ? input[key] : undefined;
+    return (
+      <div className="chips">
+        {options.map((c) => (
+          <button
+            key={c.id ?? "auto"}
+            type="button"
+            className={current === c.id ? "chip active" : "chip"}
+            onClick={() => update({ [key]: c.id })}
+          >
+            <span className="color-dot" style={{ background: c.color }} />
+            {c.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -371,131 +438,129 @@ export default function App() {
               仕上げ・印刷・保存へ
             </button>
           </section>
+        </div>
 
-          <details className="card sub-feature">
-            <summary>自動で候補を出す（サブ機能）</summary>
-            <p className="hint top">
-              商品名と特徴を入れると、見出しに使える短い文の候補を出します。
-            </p>
-            <label className="field">
-              <span className="label">
-                商品名 <em>必須</em>
-              </span>
-              <input
-                type="text"
-                value={input.name}
-                placeholder="例：キラキラ消せるボールペン"
-                onChange={(e) => update({ name: e.target.value })}
-              />
-            </label>
+        <details className="card sub-feature">
+          <summary>自動で候補を出す（サブ機能）</summary>
+          <p className="hint top">商品名と特徴を入れると、見出しに使える短い文の候補を出します。</p>
+          <label className="field">
+            <span className="label">
+              商品名 <em>必須</em>
+            </span>
+            <input
+              type="text"
+              value={input.name}
+              placeholder="例：キラキラ消せるボールペン"
+              onChange={(e) => update({ name: e.target.value })}
+            />
+          </label>
 
-            <div className="field">
-              <span className="label">特徴（3つまで・空欄でもOK）</span>
-              <span className="sub-label">商品の種類を選ぶと、特徴の候補が出ます</span>
-              <div className="chips">
-                {FEATURE_CATEGORIES.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={input.category === c.id ? "chip active" : "chip"}
-                    onClick={() => update({ category: input.category === c.id ? undefined : c.id })}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-              {category && (
-                <div className="chips suggestions">
-                  {category.features.map((word) => {
-                    const selected = input.features.some((f) => f.trim() === word);
-                    return (
-                      <button
-                        key={word}
-                        type="button"
-                        className={selected ? "chip small active" : "chip small"}
-                        disabled={!selected && featuresFull}
-                        onClick={() => toggleFeature(word)}
-                      >
-                        {word}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {category && featuresFull && (
-                <p className="hint">特徴は3つまでです。選んだ候補をもう一度押すと外せます。</p>
-              )}
-              {input.features.map((f, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  value={f}
-                  placeholder={["例：ラメ入り", "例：消せる", "例：限定デザイン"][i]}
-                  onChange={(e) => setFeature(i, e.target.value)}
-                />
+          <div className="field">
+            <span className="label">特徴（3つまで・空欄でもOK）</span>
+            <span className="sub-label">商品の種類を選ぶと、特徴の候補が出ます</span>
+            <div className="chips">
+              {FEATURE_CATEGORIES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={input.category === c.id ? "chip active" : "chip"}
+                  onClick={() => update({ category: input.category === c.id ? undefined : c.id })}
+                >
+                  {c.label}
+                </button>
               ))}
             </div>
-            <div className="field">
-              <span className="label">だれに向けて？</span>
-              <div className="chips">
-                {(Object.keys(TARGET_LABELS) as Target[]).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className={input.target === t ? "chip active" : "chip"}
-                    onClick={() => update({ target: t })}
-                  >
-                    {TARGET_LABELS[t]}
-                  </button>
-                ))}
+            {category && (
+              <div className="chips suggestions">
+                {category.features.map((word) => {
+                  const selected = input.features.some((f) => f.trim() === word);
+                  return (
+                    <button
+                      key={word}
+                      type="button"
+                      className={selected ? "chip small active" : "chip small"}
+                      disabled={!selected && featuresFull}
+                      onClick={() => toggleFeature(word)}
+                    >
+                      {word}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-
-            <div className="field">
-              <span className="label">雰囲気</span>
-              <div className="chips">
-                {(Object.keys(TONE_LABELS) as Tone[]).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className={input.tone === t ? "chip active" : "chip"}
-                    onClick={() => update({ tone: t })}
-                  >
-                    {TONE_LABELS[t]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="primary"
-              disabled={!canGenerate}
-              onClick={handleGenerate}
-            >
-              {candidates.length > 0 ? "別の候補を出す" : "候補を出す"}
-            </button>
-            {!canGenerate && <p className="hint">商品名を入れると押せるようになります。</p>}
-
-            {candidates.length > 0 && (
-              <ul className="candidates">
-                {candidates.map((c) => (
-                  <li key={c}>
-                    <p className="copy-text">{plainText(c)}</p>
-                    <div className="row-actions">
-                      <button type="button" onClick={() => handleCopy(c)}>
-                        {copied === c ? "コピーしました" : "コピー"}
-                      </button>
-                      <button type="button" onClick={() => applyCandidate(c)}>
-                        見出しに使う
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
             )}
-          </details>
-        </div>
+            {category && featuresFull && (
+              <p className="hint">特徴は3つまでです。選んだ候補をもう一度押すと外せます。</p>
+            )}
+            {input.features.map((f, i) => (
+              <input
+                key={i}
+                type="text"
+                value={f}
+                placeholder={["例：ラメ入り", "例：消せる", "例：限定デザイン"][i]}
+                onChange={(e) => setFeature(i, e.target.value)}
+              />
+            ))}
+          </div>
+          <div className="field">
+            <span className="label">だれに向けて？</span>
+            <div className="chips">
+              {(Object.keys(TARGET_LABELS) as Target[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={input.target === t ? "chip active" : "chip"}
+                  onClick={() => update({ target: t })}
+                >
+                  {TARGET_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <span className="label">雰囲気</span>
+            <div className="chips">
+              {(Object.keys(TONE_LABELS) as Tone[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={input.tone === t ? "chip active" : "chip"}
+                  onClick={() => update({ tone: t })}
+                >
+                  {TONE_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="primary"
+            disabled={!canGenerate}
+            onClick={handleGenerate}
+          >
+            {candidates.length > 0 ? "別の候補を出す" : "候補を出す"}
+          </button>
+          {!canGenerate && <p className="hint">商品名を入れると押せるようになります。</p>}
+
+          {candidates.length > 0 && (
+            <ul className="candidates">
+              {candidates.map((c) => (
+                <li key={c}>
+                  <p className="copy-text">{plainText(c)}</p>
+                  <div className="row-actions">
+                    <button type="button" onClick={() => handleCopy(c)}>
+                      {copied === c ? "コピーしました" : "コピー"}
+                    </button>
+                    <button type="button" onClick={() => applyCandidate(c)}>
+                      見出しに使う
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
       </main>
 
       {showPop && (
@@ -528,19 +593,18 @@ export default function App() {
           </div>
           <div className="pop-backgrounds no-print">
             <span className="label">背景</span>
-            <div className="chips">
-              {BACKGROUNDS.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={background.id === b.id ? "chip active" : "chip"}
-                  onClick={() => update({ background: b.id })}
-                >
-                  <span className="swatch" style={{ background: b.base, borderColor: b.pattern }} />
-                  {b.label}
-                </button>
-              ))}
-            </div>
+            <span className="sub-label">明るい</span>
+            {backgroundChips(false)}
+            <span className="sub-label">おとなしい（お詫び・お知らせ向け）</span>
+            {backgroundChips(true)}
+          </div>
+          <div className="pop-backgrounds no-print">
+            <span className="label">見出しの色</span>
+            {colorChips("headingColor", "背景に合わせる", background.text)}
+          </div>
+          <div className="pop-backgrounds no-print">
+            <span className="label">補足文の色</span>
+            {colorChips("subColor", "標準（濃いグレー）", SUB_DEFAULT_COLOR)}
           </div>
           {/* 用紙の向きと印刷の大きさはサイズごとに変わるので、ここで指定する */}
           <style>{`
