@@ -11,15 +11,16 @@
 
 ## リポジトリの構成
 
-1つのリポジトリに、独立した3つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
+1つのリポジトリに、独立した4つのアプリが入っています。どれもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
 
 | アプリ | 場所 | 内容 | 主な技術 | データ保存先 |
 | --- | --- | --- | --- | --- |
 | GymLog | ルート（`src/`） | 筋トレ・体重記録（PWA） | React 19 / TypeScript / Tailwind v4 / Dexie / Recharts | IndexedDB |
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
 | pop-maker | `pop-maker/` | 売り場POP作成（見出し・補足文を入力） | React 18 / TypeScript / Vite 5 | localStorage（前回の入力・マイフレーズ・まとめて印刷の一覧） |
+| zaiko-check | `zaiko-check/` | 在庫もちチェッカー（あと何日もつか・納品まで足りるか） | React 18 / TypeScript / Vite 5 | 保存なし |
 
-- 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker の作業はそれぞれのフォルダに移動してから行います。
+- 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker / zaiko-check の作業はそれぞれのフォルダに移動してから行います。
 - 詳しい機能説明は `README.md` と `meal-tracker/README.md` を参照してください。
 
 ### GymLog（`src/`）
@@ -68,6 +69,12 @@ pop-maker:
 cd pop-maker && npm install && npm run build
 ```
 
+zaiko-check:
+
+```bash
+cd zaiko-check && npm install && npm run build
+```
+
 作業後は、変更したアプリに応じて上記の lint / テスト / ビルドが通ることを確認してください。
 
 ## コードの書き方
@@ -82,4 +89,5 @@ cd pop-maker && npm install && npm run build
   - GymLog: https://respect00886-byte.github.io/claude-code/
   - meal-tracker: https://respect00886-byte.github.io/claude-code/meal-tracker/
   - pop-maker: https://respect00886-byte.github.io/claude-code/pop-maker/
-- 3つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker / pop-maker を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。
+  - zaiko-check: https://respect00886-byte.github.io/claude-code/zaiko-check/
+- 4つのアプリは同じサイトに同居しています。GymLog の Service Worker が meal-tracker / pop-maker / zaiko-check を横取りしないよう、`vite.config.ts` の `navigateFallbackDenylist` で除外しています。消さないでください。

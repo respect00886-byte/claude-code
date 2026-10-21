@@ -1,0 +1,119 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+/* スマホ片手で見やすいよう、1列・大きめの文字にする */
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+.lead {
+  margin: 6px 0 16px;
+  color: #555;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.form input {
+  font-size: 1.2rem;
+  padding: 12px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.hint {
+  color: #666;
+  margin: 16px 0;
+}
+
+.result {
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 12px;
+  border: 3px solid;
+  background: #fff;
+}
+
+.result p {
+  margin: 8px 0;
+  font-size: 1.05rem;
+}
+
+.result .title {
+  font-weight: bold;
+  color: #444;
+}
+
+.result .big {
+  font-size: 1.3rem;
+}
+
+.result .big strong {
+  font-size: 2.4rem;
+}
+
+.result .verdict {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.result .sub {
+  font-size: 1rem;
+}
+
+/* 間に合う＝緑、足りない＝赤 で一目で分かるように */
+.result.ok {
+  border-color: #2e7d32;
+}
+
+.result.ok .verdict {
+  color: #2e7d32;
+}
+
+.result.short {
+  border-color: #c62828;
+  background: #fff5f5;
+}
+
+.result.short .verdict {
+  color: #c62828;
+}
+
+.reset {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #ddd;
+  color: #222;
+}
