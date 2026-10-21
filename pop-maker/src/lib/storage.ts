@@ -20,3 +20,30 @@ export function saveInput(input: PopInput): void {
     // 保存できない環境（プライベートモード等）でも画面はそのまま使えるようにする
   }
 }
+
+const PHRASES_KEY = "pop-maker:phrases";
+
+// 自分で登録したフレーズ。見出し用と補足文用で分けて持つ
+export interface MyPhrases {
+  headings: string[];
+  subs: string[];
+}
+
+export function loadPhrases(): MyPhrases {
+  try {
+    const raw = localStorage.getItem(PHRASES_KEY);
+    if (raw == null) return { headings: [], subs: [] };
+    const saved = JSON.parse(raw) as Partial<MyPhrases>;
+    return { headings: saved.headings ?? [], subs: saved.subs ?? [] };
+  } catch {
+    return { headings: [], subs: [] };
+  }
+}
+
+export function savePhrases(phrases: MyPhrases): void {
+  try {
+    localStorage.setItem(PHRASES_KEY, JSON.stringify(phrases));
+  } catch {
+    // 保存できない環境でも、開いている間は使えるようにする
+  }
+}

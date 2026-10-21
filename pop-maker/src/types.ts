@@ -5,7 +5,9 @@ export type Target = "kids" | "adult" | "fan" | "gift";
 export type Tone = "genki" | "yasashii" | "jouhin";
 
 export interface PopInput {
-  name: string;
+  heading: string; // POPの見出し（大きい文字）。自分で入力するのが基本
+  sub: string; // 見出しの下に添える補足文（小さい文字）
+  name: string; // ここから下の name〜tone は、サブ機能「自動で候補を出す」用
   features: string[];
   target: Target;
   tone: Tone;

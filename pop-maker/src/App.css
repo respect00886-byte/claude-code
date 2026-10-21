@@ -42,6 +42,19 @@ h2 {
     grid-template-columns: 1fr 1fr;
     align-items: start;
   }
+
+  /* パソコンでは入力しながら見られるよう、プレビューを画面に残す */
+  .preview {
+    position: sticky;
+    top: 16px;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
 
 .card {
@@ -73,12 +86,112 @@ h2 {
   margin-left: 4px;
 }
 
-input[type="text"] {
+input[type="text"],
+textarea {
   font-size: 16px;
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 8px;
   width: 100%;
+  font-family: inherit;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.count {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+/* 登録ボタンは入力欄の補助なので、控えめな見た目にする */
+.register {
+  align-self: flex-end;
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: #d4380d;
+  border-color: #ffbb96;
+}
+
+.register:disabled {
+  color: #bbb;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
+
+/* マイフレーズ：本文ボタンと削除ボタンを1つのまとまりに見せる */
+.my-phrase {
+  display: inline-flex;
+}
+
+.my-phrase .chip {
+  border-radius: 999px 0 0 999px;
+}
+
+.remove {
+  min-width: 44px;
+  border-left: none;
+  border-radius: 0 999px 999px 0;
+  color: #999;
+}
+
+/* 言い回しの一覧：特徴の候補と同じ色の枠に、見出し用・補足文用を縦に並べる */
+.phrase-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff7f0;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.hint.top {
+  margin: -6px 0 14px;
+}
+
+.preview-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.preview-canvas.portrait {
+  width: auto;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 0 auto 14px;
+}
+
+.preview .hint {
+  margin: 0 0 14px;
+}
+
+/* サブ機能はふだんたたんでおき、メインの入力の邪魔にならないようにする */
+.sub-feature summary {
+  font-weight: bold;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.sub-feature[open] summary {
+  margin-bottom: 12px;
+}
+
+.sub-feature .candidates {
+  margin-top: 16px;
 }
 
 .chips {

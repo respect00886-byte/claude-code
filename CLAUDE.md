@@ -17,7 +17,7 @@
 | --- | --- | --- | --- | --- |
 | GymLog | ルート（`src/`） | 筋トレ・体重記録（PWA） | React 19 / TypeScript / Tailwind v4 / Dexie / Recharts | IndexedDB |
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
-| pop-maker | `pop-maker/` | 売り場POPのキャッチコピー作成 | React 18 / TypeScript / Vite 5 | localStorage（前回の入力のみ） |
+| pop-maker | `pop-maker/` | 売り場POP作成（見出し・補足文を入力） | React 18 / TypeScript / Vite 5 | localStorage（前回の入力・マイフレーズ） |
 
 - 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker の作業はそれぞれのフォルダに移動してから行います。
 - 詳しい機能説明は `README.md` と `meal-tracker/README.md` を参照してください。
@@ -38,7 +38,9 @@
 
 ### pop-maker（`pop-maker/`）
 
-- AI は使わず、`src/data/templates.ts` の「文のひな形」に商品名（`{商品}`）・特徴（`{特徴}`）を当てはめて候補を作ります（`src/lib/generate.ts`）。
+- メインは見出し・補足文の手入力。定番の言い回しは `src/data/phrases.ts`、マイフレーズは localStorage に保存（`src/lib/storage.ts`）。
+- 文字の大きさは `src/lib/drawPop.ts` の `fitTexts` が文字数に合わせて自動で決めます。
+- サブ機能の自動生成は AI を使わず、`src/data/templates.ts` の「文のひな形」に商品名（`{商品}`）・特徴（`{特徴}`）を当てはめて候補を作ります（`src/lib/generate.ts`）。
 - 書き方は meal-tracker と同じ（ダブルクォート＋セミコロン）。ルートの `npm run lint` の対象にも入ります。
 
 ## よく使うコマンド
