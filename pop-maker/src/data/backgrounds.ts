@@ -1,5 +1,16 @@
 // POP画像の背景。模様はすべて lib/drawPop.ts でコードから描く（画像素材は使わない）。
-export type BackgroundId = "simple" | "dots" | "stars" | "lines" | "stripe" | "frame";
+export type BackgroundId =
+  | "simple"
+  | "dots"
+  | "stars"
+  | "lines"
+  | "stripe"
+  | "frame"
+  | "plain"
+  | "formal"
+  | "gray"
+  | "navy"
+  | "beige";
 
 export interface Background {
   id: BackgroundId;
@@ -8,6 +19,7 @@ export interface Background {
   pattern: string; // 模様・枠の色
   accent: string; // 2色目の模様
   text: string; // キャッチコピーの色
+  calm?: boolean; // お詫びなどに使うおとなしい背景。選ぶ欄で別の段に分けて出す
 }
 
 export const BACKGROUNDS: Background[] = [
@@ -58,6 +70,52 @@ export const BACKGROUNDS: Background[] = [
     pattern: "#389e0d",
     accent: "#95de64",
     text: "#237804",
+  },
+  // ---- おとなしい背景（お詫び・お知らせ向け）。模様は入れず、細い枠だけにする ----
+  {
+    id: "plain",
+    label: "白・細枠",
+    base: "#ffffff",
+    pattern: "#9e9e9e",
+    accent: "#9e9e9e",
+    text: "#262626",
+    calm: true,
+  },
+  {
+    id: "formal",
+    label: "かしこまり",
+    base: "#ffffff",
+    pattern: "#1f1f1f",
+    accent: "#1f1f1f",
+    text: "#000000",
+    calm: true,
+  },
+  {
+    id: "gray",
+    label: "薄グレー",
+    base: "#f2f2f2",
+    pattern: "#bfbfbf",
+    accent: "#bfbfbf",
+    text: "#333333",
+    calm: true,
+  },
+  {
+    id: "navy",
+    label: "紺の細枠",
+    base: "#ffffff",
+    pattern: "#1d2b53",
+    accent: "#1d2b53",
+    text: "#1d2b53",
+    calm: true,
+  },
+  {
+    id: "beige",
+    label: "ベージュ",
+    base: "#faf5ea",
+    pattern: "#a1785a",
+    accent: "#a1785a",
+    text: "#5c3d24",
+    calm: true,
   },
 ];
 

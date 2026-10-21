@@ -2,16 +2,32 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BACKGROUNDS, findBackground } from "./data/backgrounds";
 import { FEATURE_CATEGORIES } from "./data/featureSuggestions";
 import { NOTICES } from "./data/notices";
+import { PHRASE_CATEGORIES } from "./data/phrases";
 import { findSize, POP_SIZES, printLayout } from "./data/sizes";
+import { resolveTextColor, SUB_DEFAULT_COLOR, TEXT_COLORS } from "./data/textColors";
+import type { TextColorId } from "./data/textColors";
+import BatchPrint from "./BatchPrint";
+import { findSheetLayout } from "./lib/batch";
+import type { BatchItem } from "./lib/batch";
 import { drawPop, popFileName, savePng } from "./lib/drawPop";
 import { generate, plainText } from "./lib/generate";
-import { loadInput, saveInput } from "./lib/storage";
+import {
+  loadBatch,
+  loadInput,
+  loadPhrases,
+  saveBatch,
+  saveInput,
+  savePhrases,
+} from "./lib/storage";
+import type { MyPhrases } from "./lib/storage";
 import { TARGET_LABELS, TONE_LABELS } from "./types";
 import type { PopInput, Target, Tone } from "./types";
 
 const FEATURE_SLOTS = 3;
 
 const EMPTY_INPUT: PopInput = {
+  heading: "",
+  sub: "",
   name: "",
   features: ["", "", ""],
   target: "kids",
@@ -47,16 +63,28 @@ export default function App() {
   const [input, setInput] = useState<PopInput>(initialInput);
   const [candidates, setCandidates] = useState<string[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
-  const [popText, setPopText] = useState<string | null>(null);
+  const [showPop, setShowPop] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [phrases, setPhrases] = useState<MyPhrases>(loadPhrases);
+  const [phraseCategory, setPhraseCategory] = useState<string | null>(null);
+  const [batch, setBatch] = useState<BatchItem[]>(loadBatch);
+  const [showBatch, setShowBatch] = useState(false);
+  const [added, setAdded] = useState(false);
+  const previewRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const canGenerate = input.name.trim() !== "";
+  const hasText = input.heading.trim() !== "" || input.sub.trim() !== "";
   const category = FEATURE_CATEGORIES.find((c) => c.id === input.category);
+  const stockPhrases = PHRASE_CATEGORIES.find((c) => c.id === phraseCategory);
   const featuresFull = input.features.every((f) => f.trim() !== "");
   const background = findBackground(input.background);
   const size = findSize(input.size);
   const print = printLayout(size);
+  const sheetLayout = findSheetLayout(size.id);
+  const batchCount = batch.reduce((sum, i) => sum + i.copies, 0);
+  const headingColor = resolveTextColor(input.headingColor, background.text);
+  const subColor = resolveTextColor(input.subColor, SUB_DEFAULT_COLOR);
   // お知らせは選んだ順ではなく、いつも同じ並び順で出す
   const notices = useMemo(() => NOTICES.filter((n) => input.notices.includes(n)), [input.notices]);
 
@@ -65,19 +93,31 @@ export default function App() {
     [input.features],
   );
 
-  // プレビューと保存画像を同じキャンバスで描くので、画面で見たものがそのまま画像になる
+  // プレビューと保存画像は同じ描き方なので、画面で見たものがそのまま画像になる
   useEffect(() => {
-    if (popText && canvasRef.current) {
-      drawPop(canvasRef.current, {
-        text: popText,
-        name: input.name,
-        notices,
-        features,
-        background,
-        size,
-      });
-    }
-  }, [popText, input.name, notices, features, background, size]);
+    const pop = {
+      heading: input.heading,
+      sub: input.sub,
+      headingColor,
+      subColor,
+      notices,
+      features,
+      background,
+      size,
+    };
+    if (previewRef.current) drawPop(previewRef.current, pop);
+    if (showPop && canvasRef.current) drawPop(canvasRef.current, pop);
+  }, [
+    showPop,
+    input.heading,
+    input.sub,
+    headingColor,
+    subColor,
+    notices,
+    features,
+    background,
+    size,
+  ]);
 
   function update(next: Partial<PopInput>) {
     const merged = { ...input, ...next };
@@ -112,6 +152,30 @@ export default function App() {
     update({ notices: next });
   }
 
+  function addPhrase(kind: keyof MyPhrases, text: string) {
+    const phrase = text.trim();
+    if (phrase === "") return;
+    // 同じフレーズは重ねず、新しく登録したものを先頭に出す
+    const next = { ...phrases, [kind]: [phrase, ...phrases[kind].filter((p) => p !== phrase)] };
+    setPhrases(next);
+    savePhrases(next);
+  }
+
+  function removePhrase(kind: keyof MyPhrases, phrase: string) {
+    if (!confirm(`「${plainText(phrase)}」を削除しますか？`)) return;
+    const next = { ...phrases, [kind]: phrases[kind].filter((p) => p !== phrase) };
+    setPhrases(next);
+    savePhrases(next);
+  }
+
+  // 自動生成の候補を見出しに入れる。文に商品名が入っていなければ補足文に添える
+  function applyCandidate(text: string) {
+    const name = input.name.trim();
+    const sub = input.sub.trim() === "" && !plainText(text).includes(name) ? name : input.sub;
+    update({ heading: text, sub });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function handleGenerate() {
     if (!canGenerate) return;
     setCandidates(generate(input));
@@ -126,11 +190,34 @@ export default function App() {
     }
   }
 
+  function changeBatch(next: BatchItem[]) {
+    setBatch(next);
+    saveBatch(next);
+  }
+
+  // 今の原稿を、作ったときの見た目のまま「まとめて印刷」の一覧に入れる
+  function addToBatch() {
+    if (!sheetLayout) return;
+    const item: BatchItem = {
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      size: sheetLayout.size,
+      copies: 1,
+      heading: input.heading,
+      sub: input.sub,
+      notices,
+      background: background.id,
+      headingColor: input.headingColor,
+      subColor: input.subColor,
+    };
+    changeBatch([...batch, item]);
+    setAdded(true);
+  }
+
   async function handleSave() {
     if (!canvasRef.current) return;
     setSaving(true);
     try {
-      await savePng(canvasRef.current, popFileName(input.name));
+      await savePng(canvasRef.current, popFileName(plainText(input.heading).slice(0, 20)));
     } catch {
       alert("画像を保存できませんでした。画面を長押しして保存してください。");
     } finally {
@@ -138,17 +225,265 @@ export default function App() {
     }
   }
 
+  function backgroundChips(calm: boolean) {
+    return (
+      <div className="chips">
+        {BACKGROUNDS.filter((b) => !!b.calm === calm).map((b) => (
+          <button
+            key={b.id}
+            type="button"
+            className={background.id === b.id ? "chip active" : "chip"}
+            onClick={() => update({ background: b.id })}
+          >
+            <span className="swatch" style={{ background: b.base, borderColor: b.pattern }} />
+            {b.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // 最初の「標準」は色を決めず（undefined）、背景を変えても合う色のままにする
+  function colorChips(key: "headingColor" | "subColor", autoLabel: string, autoColor: string) {
+    const options: { id: TextColorId | undefined; label: string; color: string }[] = [
+      { id: undefined, label: autoLabel, color: autoColor },
+      ...TEXT_COLORS,
+    ];
+    const current = TEXT_COLORS.some((c) => c.id === input[key]) ? input[key] : undefined;
+    return (
+      <div className="chips">
+        {options.map((c) => (
+          <button
+            key={c.id ?? "auto"}
+            type="button"
+            className={current === c.id ? "chip active" : "chip"}
+            onClick={() => update({ [key]: c.id })}
+          >
+            <span className="color-dot" style={{ background: c.color }} />
+            {c.label}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <header className="no-print">
-        <h1>POPキャッチコピー作成</h1>
+        <h1>POP作成</h1>
         <p className="lead">
-          商品名と特徴を入れて「候補を出す」を押すと、POPに使える短い文が出ます。
+          見出しと補足文を入れると、下のプレビューにPOPができます。文字の大きさは文字数に合わせて自動で変わります。
         </p>
       </header>
 
       <main className="layout no-print">
-        <section className="card">
+        <div className="column">
+          <section className="card">
+            <h2>POPの文章</h2>
+            <div className="field">
+              <div className="label-row">
+                <span className="label">見出し（大きい文字）</span>
+                <span className="count">
+                  {plainText(input.heading).replace(/\n/g, "").length}文字
+                </span>
+              </div>
+              <span className="sub-label">改行すると、その位置で行が変わります</span>
+              <textarea
+                rows={2}
+                value={input.heading}
+                placeholder="例：ただいま品切れ中です"
+                onChange={(e) => update({ heading: e.target.value })}
+              />
+              <button
+                type="button"
+                className="register"
+                disabled={input.heading.trim() === ""}
+                onClick={() => addPhrase("headings", input.heading)}
+              >
+                ☆ この文をマイフレーズに登録
+              </button>
+            </div>
+
+            <div className="field">
+              <div className="label-row">
+                <span className="label">補足文（小さい文字・空欄でもOK）</span>
+                <span className="count">{plainText(input.sub).replace(/\n/g, "").length}文字</span>
+              </div>
+              <span className="sub-label">見出しの下に小さく入ります</span>
+              <textarea
+                rows={3}
+                value={input.sub}
+                placeholder="例：次回入荷は10月下旬の予定です。"
+                onChange={(e) => update({ sub: e.target.value })}
+              />
+              <button
+                type="button"
+                className="register"
+                disabled={input.sub.trim() === ""}
+                onClick={() => addPhrase("subs", input.sub)}
+              >
+                ☆ この文をマイフレーズに登録
+              </button>
+            </div>
+
+            <div className="field">
+              <span className="label">お知らせ（複数OK）</span>
+              <span className="sub-label">POPの上に赤い帯で入ります</span>
+              <div className="chips">
+                {NOTICES.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    className={input.notices.includes(n) ? "chip notice active" : "chip notice"}
+                    onClick={() => toggleNotice(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="card">
+            <h2>言い回しから選ぶ</h2>
+            <p className="hint top">タップすると入力欄に入ります（今の文と入れ替わります）</p>
+            <div className="field">
+              <span className="label">定番の言い回し</span>
+              <div className="chips">
+                {PHRASE_CATEGORIES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={phraseCategory === c.id ? "chip active" : "chip"}
+                    onClick={() => setPhraseCategory(phraseCategory === c.id ? null : c.id)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              {stockPhrases && (
+                <div className="phrase-box">
+                  <span className="sub-label">見出しに入れる</span>
+                  <div className="chips">
+                    {stockPhrases.headings.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className="chip small"
+                        onClick={() => update({ heading: p })}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="sub-label">補足文に入れる</span>
+                  <div className="chips">
+                    {stockPhrases.subs.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className="chip small"
+                        onClick={() => update({ sub: p })}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="field">
+              <span className="label">マイフレーズ</span>
+              {phrases.headings.length === 0 && phrases.subs.length === 0 ? (
+                <p className="hint">
+                  まだありません。入力欄の下の「☆ 登録」で、よく使う文を登録できます。
+                </p>
+              ) : (
+                <div className="phrase-box">
+                  {phrases.headings.length > 0 && <span className="sub-label">見出し用</span>}
+                  <div className="chips">
+                    {phrases.headings.map((p) => (
+                      <span key={p} className="my-phrase">
+                        <button
+                          type="button"
+                          className="chip small"
+                          onClick={() => update({ heading: p })}
+                        >
+                          {plainText(p)}
+                        </button>
+                        <button
+                          type="button"
+                          className="remove"
+                          aria-label="削除"
+                          onClick={() => removePhrase("headings", p)}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  {phrases.subs.length > 0 && <span className="sub-label">補足文用</span>}
+                  <div className="chips">
+                    {phrases.subs.map((p) => (
+                      <span key={p} className="my-phrase">
+                        <button
+                          type="button"
+                          className="chip small"
+                          onClick={() => update({ sub: p })}
+                        >
+                          {plainText(p)}
+                        </button>
+                        <button
+                          type="button"
+                          className="remove"
+                          aria-label="削除"
+                          onClick={() => removePhrase("subs", p)}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="column">
+          <section className="card preview">
+            <h2>プレビュー</h2>
+            {hasText ? (
+              <canvas
+                ref={previewRef}
+                className={
+                  size.widthMm < size.heightMm ? "preview-canvas portrait" : "preview-canvas"
+                }
+                aria-label={plainText(`${input.heading} ${input.sub}`)}
+              />
+            ) : (
+              <p className="hint">見出しか補足文を入れると、ここにPOPが出ます。</p>
+            )}
+            <button
+              type="button"
+              className="primary"
+              disabled={!hasText}
+              onClick={() => setShowPop(true)}
+            >
+              仕上げ・印刷・保存へ
+            </button>
+            {batch.length > 0 && (
+              <button type="button" className="batch-open" onClick={() => setShowBatch(true)}>
+                まとめて印刷（{batchCount}枚）
+              </button>
+            )}
+          </section>
+        </div>
+
+        <details className="card sub-feature">
+          <summary>自動で候補を出す（サブ機能）</summary>
+          <p className="hint top">商品名と特徴を入れると、見出しに使える短い文の候補を出します。</p>
           <label className="field">
             <span className="label">
               商品名 <em>必須</em>
@@ -207,24 +542,6 @@ export default function App() {
               />
             ))}
           </div>
-
-          <div className="field">
-            <span className="label">お知らせ（複数OK）</span>
-            <span className="sub-label">POPの上に目立つ帯で入ります</span>
-            <div className="chips">
-              {NOTICES.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={input.notices.includes(n) ? "chip notice active" : "chip notice"}
-                  onClick={() => toggleNotice(n)}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="field">
             <span className="label">だれに向けて？</span>
             <div className="chips">
@@ -266,34 +583,37 @@ export default function App() {
             {candidates.length > 0 ? "別の候補を出す" : "候補を出す"}
           </button>
           {!canGenerate && <p className="hint">商品名を入れると押せるようになります。</p>}
-        </section>
 
-        {candidates.length > 0 && (
-          <section className="card">
-            <h2>候補</h2>
+          {candidates.length > 0 && (
             <ul className="candidates">
               {candidates.map((c) => (
                 <li key={c}>
-                  <p className="copy-text">{c}</p>
+                  <p className="copy-text">{plainText(c)}</p>
                   <div className="row-actions">
                     <button type="button" onClick={() => handleCopy(c)}>
                       {copied === c ? "コピーしました" : "コピー"}
                     </button>
-                    <button type="button" onClick={() => setPopText(c)}>
-                      POPで表示
+                    <button type="button" onClick={() => applyCandidate(c)}>
+                      見出しに使う
                     </button>
                   </div>
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          )}
+        </details>
       </main>
 
-      {popText && (
+      {showPop && (
         <div className="pop-overlay">
           <div className="pop-actions no-print">
-            <button type="button" onClick={() => setPopText(null)}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowPop(false);
+                setAdded(false);
+              }}
+            >
               戻る
             </button>
             <button type="button" onClick={() => window.print()}>
@@ -311,28 +631,42 @@ export default function App() {
                   key={s.id}
                   type="button"
                   className={size.id === s.id ? "chip active" : "chip"}
-                  onClick={() => update({ size: s.id })}
+                  onClick={() => {
+                    update({ size: s.id });
+                    setAdded(false);
+                  }}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
+            {sheetLayout && (
+              <div className="batch-add">
+                <button type="button" onClick={addToBatch}>
+                  ＋ まとめて印刷に追加
+                </button>
+                <span className="hint">
+                  {added
+                    ? `追加しました（まとめて印刷：${batchCount}枚）。戻って次の原稿を作れます。`
+                    : `${sheetLayout.note}でまとめて印刷できます`}
+                </span>
+              </div>
+            )}
           </div>
           <div className="pop-backgrounds no-print">
             <span className="label">背景</span>
-            <div className="chips">
-              {BACKGROUNDS.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={background.id === b.id ? "chip active" : "chip"}
-                  onClick={() => update({ background: b.id })}
-                >
-                  <span className="swatch" style={{ background: b.base, borderColor: b.pattern }} />
-                  {b.label}
-                </button>
-              ))}
-            </div>
+            <span className="sub-label">明るい</span>
+            {backgroundChips(false)}
+            <span className="sub-label">おとなしい（お詫び・お知らせ向け）</span>
+            {backgroundChips(true)}
+          </div>
+          <div className="pop-backgrounds no-print">
+            <span className="label">見出しの色</span>
+            {colorChips("headingColor", "背景に合わせる", background.text)}
+          </div>
+          <div className="pop-backgrounds no-print">
+            <span className="label">補足文の色</span>
+            {colorChips("subColor", "標準（濃いグレー）", SUB_DEFAULT_COLOR)}
           </div>
           {/* 用紙の向きと印刷の大きさはサイズごとに変わるので、ここで指定する */}
           <style>{`
@@ -344,9 +678,13 @@ export default function App() {
           <canvas
             ref={canvasRef}
             className={size.widthMm < size.heightMm ? "pop-canvas portrait" : "pop-canvas"}
-            aria-label={plainText(popText)}
+            aria-label={plainText(`${input.heading} ${input.sub}`)}
           />
         </div>
+      )}
+
+      {showBatch && (
+        <BatchPrint items={batch} onChange={changeBatch} onClose={() => setShowBatch(false)} />
       )}
     </div>
   );
