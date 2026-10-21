@@ -1,4 +1,5 @@
 import type { BackgroundId } from "./data/backgrounds";
+import type { PopSizeId } from "./data/sizes";
 
 export type Target = "kids" | "adult" | "fan" | "gift";
 export type Tone = "genki" | "yasashii" | "jouhin";
@@ -11,6 +12,7 @@ export interface PopInput {
   category?: string; // 特徴の候補を出す商品の種類（data/featureSuggestions.ts の id）
   notices: string[]; // POPの上に帯で出すお知らせ
   background?: BackgroundId;
+  size?: PopSizeId; // 保存・印刷する画像の大きさ（未設定なら A4横）
 }
 
 export const TARGET_LABELS: Record<Target, string> = {

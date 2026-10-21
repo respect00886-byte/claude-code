@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BACKGROUNDS, findBackground } from "./data/backgrounds";
 import { FEATURE_CATEGORIES } from "./data/featureSuggestions";
 import { NOTICES } from "./data/notices";
+import { findSize, POP_SIZES, printLayout } from "./data/sizes";
 import { drawPop, popFileName, savePng } from "./lib/drawPop";
-import { generate } from "./lib/generate";
+import { generate, plainText } from "./lib/generate";
 import { loadInput, saveInput } from "./lib/storage";
 import { TARGET_LABELS, TONE_LABELS } from "./types";
 import type { PopInput, Target, Tone } from "./types";
@@ -54,15 +55,29 @@ export default function App() {
   const category = FEATURE_CATEGORIES.find((c) => c.id === input.category);
   const featuresFull = input.features.every((f) => f.trim() !== "");
   const background = findBackground(input.background);
+  const size = findSize(input.size);
+  const print = printLayout(size);
   // お知らせは選んだ順ではなく、いつも同じ並び順で出す
   const notices = useMemo(() => NOTICES.filter((n) => input.notices.includes(n)), [input.notices]);
+
+  const features = useMemo(
+    () => input.features.map((f) => f.trim()).filter((f) => f !== ""),
+    [input.features],
+  );
 
   // プレビューと保存画像を同じキャンバスで描くので、画面で見たものがそのまま画像になる
   useEffect(() => {
     if (popText && canvasRef.current) {
-      drawPop(canvasRef.current, { text: popText, name: input.name, notices, background });
+      drawPop(canvasRef.current, {
+        text: popText,
+        name: input.name,
+        notices,
+        features,
+        background,
+        size,
+      });
     }
-  }, [popText, input.name, notices, background]);
+  }, [popText, input.name, notices, features, background, size]);
 
   function update(next: Partial<PopInput>) {
     const merged = { ...input, ...next };
@@ -104,7 +119,7 @@ export default function App() {
   }
 
   async function handleCopy(text: string) {
-    if (await copyText(text)) {
+    if (await copyText(plainText(text))) {
       setCopied(text);
     } else {
       alert("コピーできませんでした。文字を長押しして選択してください。");
@@ -289,6 +304,21 @@ export default function App() {
             </button>
           </div>
           <div className="pop-backgrounds no-print">
+            <span className="label">サイズ</span>
+            <div className="chips">
+              {POP_SIZES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={size.id === s.id ? "chip active" : "chip"}
+                  onClick={() => update({ size: s.id })}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="pop-backgrounds no-print">
             <span className="label">背景</span>
             <div className="chips">
               {BACKGROUNDS.map((b) => (
@@ -304,7 +334,18 @@ export default function App() {
               ))}
             </div>
           </div>
-          <canvas ref={canvasRef} className="pop-canvas" aria-label={popText} />
+          {/* 用紙の向きと印刷の大きさはサイズごとに変わるので、ここで指定する */}
+          <style>{`
+            @page { size: A4 ${print.landscape ? "landscape" : "portrait"}; margin: 10mm; }
+            @media print {
+              .pop-canvas, .pop-canvas.portrait { width: ${print.widthMm}mm; height: ${print.heightMm}mm; }
+            }
+          `}</style>
+          <canvas
+            ref={canvasRef}
+            className={size.widthMm < size.heightMm ? "pop-canvas portrait" : "pop-canvas"}
+            aria-label={plainText(popText)}
+          />
         </div>
       )}
     </div>
