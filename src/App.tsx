@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import { createHashRouter, Outlet, RouterProvider } from 'react-router'
 import { useSettings } from './lib/settings'
 import BottomNav from './components/BottomNav'
+import ErrorScreen from './components/ErrorScreen'
 import Toaster from './components/Toaster'
 import UpdatePrompt from './components/UpdatePrompt'
 import TodayPage from './pages/TodayPage'
@@ -26,6 +27,7 @@ function Layout() {
 const router = createHashRouter([
   {
     element: <Layout />,
+    errorElement: <ErrorScreen />,
     children: [
       { index: true, element: <TodayPage /> },
       { path: 'history', element: <HistoryPage /> },

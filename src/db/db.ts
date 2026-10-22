@@ -192,18 +192,44 @@ export async function updateSetGroup(
 }
 
 /**
+ * iPhone の Safari では、作ったばかりの保存場所で順番に読む処理 (カーソル) が
+ * 「Unable to open cursor」で失敗することがある。そのときは全件を読む方法でやり直す
+ */
+export async function withCursorFallback<T>(
+  primary: () => Promise<T>,
+  fallback: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await primary()
+  } catch (e) {
+    const name = (e as { name?: string } | null)?.name
+    if (name !== 'UnknownError' && name !== 'InvalidStateError') throw e
+    return fallback()
+  }
+}
+
+/** 文字列の最大値 (日付の YYYY-MM-DD は文字列の大小で比べられる) */
+export const maxOf = (values: string[]) =>
+  values.reduce<string | undefined>((a, b) => (a === undefined || b > a ? b : a), undefined)
+
+/**
  * 指定種目の前回の記録。beforeDate を渡すとその日より前の直近日から探す。
  * 直近日のうち最後に入力した重量・回数と、同じ重量・回数のセット数を返す。
  */
 export async function lastSetOf(exerciseId: number, beforeDate?: string, database: GymDB = db) {
-  const range = database.workoutSets
-    .where('[exerciseId+date]')
-    .between([exerciseId, Dexie.minKey], [exerciseId, beforeDate ?? Dexie.maxKey], true, false)
-  const lastRow = await range.last()
-  if (!lastRow) return undefined
+  // 一度失敗した Collection は使い回せないので、読むたびに作る
+  const range = () =>
+    database.workoutSets
+      .where('[exerciseId+date]')
+      .between([exerciseId, Dexie.minKey], [exerciseId, beforeDate ?? Dexie.maxKey], true, false)
+  const lastDate = await withCursorFallback(
+    async () => (await range().last())?.date,
+    async () => maxOf((await range().toArray()).map((s) => s.date)),
+  )
+  if (!lastDate) return undefined
   const daySets = await database.workoutSets
     .where('[exerciseId+date]')
-    .equals([exerciseId, lastRow.date])
+    .equals([exerciseId, lastDate])
     .toArray()
   // 自動採番 id が大きいほど後に入力したセット
   const latest = daySets.reduce((a, b) => (b.id > a.id ? b : a))

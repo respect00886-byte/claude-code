@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DAY_NOTE, GymDB, addSets } from './db'
 import {
   addPlan,
@@ -39,6 +39,20 @@ describe('menu', () => {
     expect(await previousWorkoutDate('2026-09-05', db)).toBe('2026-09-01')
     expect(await previousWorkoutDate('2026-09-10', db)).toBe('2026-09-05')
     expect(await previousWorkoutDate('2026-09-01', db)).toBeUndefined()
+  })
+
+  it('previousWorkoutDate works even when the cursor cannot be opened', async () => {
+    await addSets('2026-09-01', 1, 60, 10, 1, db)
+    await addSets('2026-09-05', 1, 60, 10, 1, db)
+    const spy = vi
+      .spyOn(db.Collection.prototype, 'last')
+      .mockRejectedValue(
+        Object.assign(new Error('Unable to open cursor'), { name: 'UnknownError' }),
+      )
+    expect(await previousWorkoutDate('2026-09-10', db)).toBe('2026-09-05')
+    expect(await previousWorkoutDate('2026-09-01', db)).toBeUndefined()
+    expect(spy).toHaveBeenCalled()
+    spy.mockRestore()
   })
 
   it('addPlan skips exercises already planned or done, and can be undone', async () => {
