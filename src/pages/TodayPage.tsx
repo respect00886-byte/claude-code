@@ -20,6 +20,7 @@ import {
   deleteSets,
   lastSetOf,
   updateSetGroup,
+  withCursorFallback,
   type Exercise,
   type MenuItem,
   type Routine,
@@ -115,7 +116,11 @@ export default function TodayPage() {
   const { weeklyGoal } = useSettings()
   // 記録のある日付だけを日付の索引から取り出す (セット全件を読まずに済む)
   const workoutDates = useLiveQuery(
-    () => db.workoutSets.orderBy('date').uniqueKeys() as Promise<string[]>,
+    () =>
+      withCursorFallback(
+        () => db.workoutSets.orderBy('date').uniqueKeys() as Promise<string[]>,
+        async () => (await db.workoutSets.toArray()).map((s) => s.date),
+      ),
     [],
   )
   const weekly = workoutDates && weeklyProgress(workoutDates, today, weeklyGoal)

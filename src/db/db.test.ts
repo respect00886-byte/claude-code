@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   GymDB,
   addSets,
@@ -7,6 +7,7 @@ import {
   lastSetOf,
   saveBodyWeight,
   updateSetGroup,
+  withCursorFallback,
 } from './db'
 import { exportData, importData, parseBackup } from '../lib/backup'
 import { groupSets } from '../lib/stats'
@@ -50,6 +51,35 @@ describe('db', () => {
     expect((await lastSetOf(1, '2026-09-05', db))?.date).toBe('2026-09-01')
     expect((await lastSetOf(1, '2026-09-10', db))?.date).toBe('2026-09-05')
     expect(await lastSetOf(1, '2026-09-01', db)).toBeUndefined()
+  })
+
+  describe('when the cursor cannot be opened (iPhone Safari)', () => {
+    const cursorError = () =>
+      Object.assign(new Error('Unable to open cursor'), { name: 'UnknownError' })
+    afterEach(() => vi.restoreAllMocks())
+
+    it('withCursorFallback uses the fallback only for storage errors', async () => {
+      const ok = async () => 'fallback'
+      expect(await withCursorFallback(() => Promise.reject(cursorError()), ok)).toBe('fallback')
+      await expect(
+        withCursorFallback(() => Promise.reject(new TypeError('x')), ok),
+      ).rejects.toThrow(TypeError)
+    })
+
+    it('lastSetOf still returns the latest entry', async () => {
+      await addSets('2026-09-05', 1, 62.5, 8, 2, db)
+      await addSets('2026-09-01', 1, 60, 10, 3, db)
+      const spy = vi.spyOn(db.Collection.prototype, 'last').mockRejectedValue(cursorError())
+      expect(await lastSetOf(1, undefined, db)).toEqual({
+        weight: 62.5,
+        reps: 8,
+        sets: 2,
+        date: '2026-09-05',
+      })
+      expect((await lastSetOf(1, '2026-09-05', db))?.date).toBe('2026-09-01')
+      expect(await lastSetOf(2, undefined, db)).toBeUndefined()
+      expect(spy).toHaveBeenCalled()
+    })
   })
 
   it('migrates v1 exercises to have kind and step', async () => {

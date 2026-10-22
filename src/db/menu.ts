@@ -1,4 +1,12 @@
-import { DAY_NOTE, db as defaultDb, type GymDB, type MenuItem, type Undo } from './db'
+import {
+  DAY_NOTE,
+  db as defaultDb,
+  maxOf,
+  withCursorFallback,
+  type GymDB,
+  type MenuItem,
+  type Undo,
+} from './db'
 import { byInputOrder } from '../lib/stats'
 
 /** その日の記録から、種目ごとのメニュー (最後に入力した重量・回数とセット数) を作る */
@@ -30,8 +38,11 @@ export async function menuOfDay(date: string, database: GymDB = defaultDb): Prom
 
 /** 指定日より前で記録がある直近の日 */
 export async function previousWorkoutDate(date: string, database: GymDB = defaultDb) {
-  const row = await database.workoutSets.where('date').below(date).last()
-  return row?.date
+  const before = () => database.workoutSets.where('date').below(date)
+  return withCursorFallback(
+    async () => (await before().last())?.date,
+    async () => maxOf((await before().toArray()).map((s) => s.date)),
+  )
 }
 
 /** メニューをその日の予定に追加する。すでに予定か記録がある種目は追加しない */
