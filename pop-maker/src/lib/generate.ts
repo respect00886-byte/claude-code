@@ -22,18 +22,39 @@ function shuffle<T>(items: T[]): T[] {
   return copy;
 }
 
+// 「おそろい」「色合い」のように「い」で終わる名詞
+const NOUN_I = /(おそろい|合い|あい|違い|ちがい|使い|づかい)$/;
+
 // 「消せる」「かわいい」「書きやすかった」のような言葉かどうか（最後の1文字で判断する簡易版）
 function isPredicate(feature: string): boolean {
-  return /[るいた]$/.test(feature);
+  return /[るいた]$/.test(feature) && !NOUN_I.test(feature);
 }
 
-// 「〜が」「〜で」が続く位置用。「消せるが」は不自然なので「消せることが」にする
+// 「きれい」「ていねい」のように「い」で終わっても「な」が付く言葉（〜えい の音）
+const NA_WORD = /[えけせてねへめれ]い$/;
+// 「かわいい」「書きやすい」のように、「〜さ」にすると自然な言葉の終わり方。
+// 「おそろい」「色合い」のような「い」で終わる名詞まで変えないよう、よくある形だけに絞る
+const SA_WORD =
+  /(かわいい|可愛い|しい|やすい|にくい|っぽい|[かがきくさごつぶよるろ]い|[軽白強太細丸赤青黒広薄厚硬固長短高安速暖明甘辛]い)$/;
+
+// 「〜が」「〜で」が続く位置用。「消せるが」は不自然なので「消せることが」にする。
+// 「かわいい」は「かわいいことが」より「かわいさが」が自然なので「〜さ」にする
 function asNoun(feature: string): string {
+  // 「インクがにじまない」「色がきれい」のような文は「〜さ」にすると不自然なので「〜こと」にする
+  // 「おもしろい」「ながい」の中の「も」「が」まで文と間違えないよう、言葉の頭の1〜2文字は見ない
+  const isPhrase =
+    /[、\s]/.test(feature) || /^.{2,}[がはも]|[\p{Script=Han}\p{Script=Katakana}ー][がはも]/u.test(feature);
+  if (NA_WORD.test(feature)) return isPhrase ? `${feature}なこと` : `${feature}さ`;
+  if (!isPhrase && isPredicate(feature) && SA_WORD.test(feature)) {
+    return `${feature.slice(0, -1)}さ`;
+  }
   return isPredicate(feature) ? `${feature}こと` : feature;
 }
 
-// 商品名の前に付ける形。「ラメ入りの」は「の」が要るが、「消せる」はそのままつながる
+// 商品名の前に付ける形。「ラメ入りの」は「の」が要るが、「消せる」はそのままつながる。
+// 「きれい」は「きれいな」にする
 function asModifier(feature: string): string {
+  if (NA_WORD.test(feature)) return `${feature}な`;
   return isPredicate(feature) || /[のな]$/.test(feature) ? feature : `${feature}の`;
 }
 

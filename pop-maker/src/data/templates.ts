@@ -14,7 +14,7 @@ export interface Template {
 
 export const TEMPLATES: Template[] = [
   // ---- 共通 ----
-  { text: "話題の/{商品}、入荷しました！", tones: ["genki"] },
+  { text: "注目の/{商品}、入荷しました！", tones: ["genki"] },
   { text: "{特徴}が/うれしい！{商品}", tones: ["genki"] },
   { text: "イチオシ！{特徴の}/{商品}", tones: ["genki"] },
   { text: "売り場スタッフの/おすすめ！{商品}", tones: ["genki", "yasashii"] },
@@ -25,7 +25,12 @@ export const TEMPLATES: Template[] = [
   { text: "{特徴}が/自慢の、{商品}。", tones: ["jouhin"] },
   // 特徴が空欄でも候補が少なくなりすぎないよう、特徴を使わない文も用意する
   { text: "注目！{商品}", tones: ["genki"] },
-  { text: "ぜひ/手に取って/みてね！", tones: ["genki", "yasashii"] },
+  // 子ども向けには、やわらかい「ぜひ/手に取って/みてね！」を別に用意している
+  {
+    text: "ぜひ/お手に取って/みてください！",
+    tones: ["genki", "yasashii"],
+    targets: ["adult", "fan", "gift"],
+  },
   { text: "あなたの/毎日に、{商品}", tones: ["yasashii"] },
   { text: "{商品}の/ある/暮らし。", tones: ["jouhin"] },
   { text: "長く/愛せる、{商品}。", tones: ["jouhin"] },
@@ -33,24 +38,25 @@ export const TEMPLATES: Template[] = [
 
   // ---- 子ども ----
   { text: "{商品}で/毎日/ワクワク！", tones: ["genki"], targets: ["kids"] },
-  { text: "みんな/大好き！{商品}", tones: ["genki"], targets: ["kids"] },
+  { text: "ワクワクが/いっぱい！{商品}", tones: ["genki"], targets: ["kids"] },
   { text: "{特徴}で/たのしさ/アップ！", tones: ["genki"], targets: ["kids"] },
-  { text: "がっこうでも/自慢しちゃおう！", tones: ["genki"], targets: ["kids"] },
+  { text: "おともだちにも/見せたくなる！", tones: ["genki"], targets: ["kids"] },
   { text: "新学期の/おともに！{商品}", tones: ["genki"], targets: ["kids"] },
   { text: "はじめての/{商品}に/ぴったり", tones: ["yasashii"], targets: ["kids"] },
   { text: "{特徴の}/{商品}、つかって/みてね", tones: ["yasashii"], targets: ["kids"] },
-  { text: "おべんきょうが/楽しくなる/{商品}", tones: ["yasashii"], targets: ["kids"] },
-  { text: "長く/使える、確かな/{商品}。", tones: ["jouhin"], targets: ["kids"] },
-  { text: "お子さまにも/安心。{特徴の}/{商品}", tones: ["jouhin", "yasashii"], targets: ["kids"] },
+  { text: "ぜひ/手に取って/みてね！", tones: ["genki", "yasashii"], targets: ["kids"] },
+  { text: "まいにちが/楽しくなる/{商品}", tones: ["yasashii"], targets: ["kids"] },
+  { text: "長く/使ってほしい、{商品}。", tones: ["jouhin"], targets: ["kids"] },
+  { text: "お子さまにも/おすすめ。{特徴の}/{商品}", tones: ["jouhin", "yasashii"], targets: ["kids"] },
 
   // ---- 大人 ----
-  { text: "仕事が/はかどる！{商品}", tones: ["genki"], targets: ["adult"] },
-  { text: "{特徴}で/作業効率/アップ！", tones: ["genki"], targets: ["adult"] },
-  { text: "大人も/夢中！{商品}", tones: ["genki"], targets: ["adult"] },
+  { text: "お仕事の/おともに！{商品}", tones: ["genki"], targets: ["adult"] },
+  { text: "{特徴の}/{商品}で/お仕事を/楽しく！", tones: ["genki"], targets: ["adult"] },
+  { text: "大人も/楽しめる！{商品}", tones: ["genki"], targets: ["adult"] },
   { text: "がんばる/毎日に、{商品}", tones: ["yasashii"], targets: ["adult"] },
-  { text: "{特徴}で、ほっと/ひと息。", tones: ["yasashii"], targets: ["adult"] },
-  { text: "{特徴}が/心地よい、{商品}。", tones: ["jouhin"], targets: ["adult"] },
-  { text: "手になじむ、大人の/{商品}。", tones: ["jouhin"], targets: ["adult"] },
+  { text: "{特徴の}/{商品}で、ほっと/ひと息。", tones: ["yasashii"], targets: ["adult"] },
+  { text: "心地よく/使える、{特徴の}/{商品}。", tones: ["jouhin"], targets: ["adult"] },
+  { text: "使うほどに/なじむ、大人の/{商品}。", tones: ["jouhin"], targets: ["adult"] },
   { text: "使うたびに、良さが/わかる。", tones: ["jouhin"], targets: ["adult"] },
 
   // ---- ファン向け ----
@@ -58,7 +64,7 @@ export const TEMPLATES: Template[] = [
   { text: "見逃せない！{商品}/登場！", tones: ["genki"], targets: ["fan"] },
   { text: "推し活に！{商品}", tones: ["genki"], targets: ["fan"] },
   { text: "集めたくなる！{特徴の}/{商品}", tones: ["genki"], targets: ["fan"] },
-  { text: "お早めに！{商品}", tones: ["genki"], targets: ["fan"] },
+  { text: "お見逃しなく！{商品}", tones: ["genki"], targets: ["fan"] },
   { text: "推しと/いっしょの/毎日を。", tones: ["yasashii"], targets: ["fan"] },
   { text: "{特徴}に、きゅん。{商品}", tones: ["yasashii"], targets: ["fan"] },
   { text: "大切に/使いたい、{商品}。", tones: ["yasashii", "jouhin"], targets: ["fan"] },
@@ -70,8 +76,8 @@ export const TEMPLATES: Template[] = [
   { text: "もらって/うれしい！{特徴の}/{商品}", tones: ["genki"], targets: ["gift"] },
   { text: "ギフトに/迷ったら/{商品}！", tones: ["genki"], targets: ["gift"] },
   { text: "ありがとうの/気持ちに、{商品}", tones: ["yasashii"], targets: ["gift"] },
-  { text: "{特徴}で、笑顔を/届けよう", tones: ["yasashii"], targets: ["gift"] },
+  { text: "{特徴の}/{商品}で、笑顔を/届けよう", tones: ["yasashii"], targets: ["gift"] },
   { text: "大切な/人へ、{商品}を。", tones: ["yasashii", "jouhin"], targets: ["gift"] },
   { text: "{特徴の}/{商品}を、心に残る/贈りものに。", tones: ["jouhin"], targets: ["gift"] },
-  { text: "贈って/喜ばれる、上質な/{商品}。", tones: ["jouhin"], targets: ["gift"] },
+  { text: "心を込めて/贈りたい、{商品}。", tones: ["jouhin"], targets: ["gift"] },
 ];
