@@ -35,7 +35,7 @@ describe("buildAll", () => {
 describe("generate", () => {
   it("候補は最大8件で、短い文が先に並ぶ", () => {
     const texts = generate(input("adult", "jouhin", ["消せる", "ラメ入り", "書きやすい"]));
-    expect(texts.length).toBeLessThanOrEqual(7);
+    expect(texts.length).toBeLessThanOrEqual(8);
     const lengths = texts.map((t) => plainText(t).length);
     const firstLong = lengths.findIndex((n) => n > MAX_LENGTH);
     if (firstLong >= 0) expect(lengths.slice(firstLong).every((n) => n > MAX_LENGTH)).toBe(true);
