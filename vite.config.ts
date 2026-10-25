@@ -38,6 +38,8 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
+    // meal-tracker/ と pop-maker/ は別アプリなので、テストはそれぞれのフォルダで行う
+    exclude: ['**/node_modules/**', 'meal-tracker/**', 'pop-maker/**'],
     setupFiles: ['fake-indexeddb/auto'],
   },
 })

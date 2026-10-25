@@ -1,0 +1,62 @@
+# PRを出した・更新したときに、3つのアプリの lint・テスト・ビルドだけを行う（公開はしない）
+name: PR Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+# 同じPRに続けて push したときは、古いほうのチェックを止めて新しいほうだけ行う
+concurrency:
+  group: check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # どのアプリで失敗したか一目で分かるよう、アプリごとに分けている
+  gymlog:
+    name: GymLog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  meal-tracker:
+    name: meal-tracker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: meal-tracker
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: meal-tracker/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  pop-maker:
+    name: pop-maker
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pop-maker
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: pop-maker/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

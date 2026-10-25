@@ -37,6 +37,8 @@ jobs:
       - run: mkdir -p dist/meal-tracker && cp -r meal-tracker/dist/. dist/meal-tracker/
       - run: npm ci
         working-directory: pop-maker
+      - run: npm test
+        working-directory: pop-maker
       - run: npm run build
         working-directory: pop-maker
       - run: mkdir -p dist/pop-maker && cp -r pop-maker/dist/. dist/pop-maker/

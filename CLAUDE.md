@@ -65,7 +65,7 @@ cd meal-tracker && npm install && npm run build
 pop-maker:
 
 ```bash
-cd pop-maker && npm install && npm run build
+cd pop-maker && npm install && npm test && npm run build
 ```
 
 作業後は、変更したアプリに応じて上記の lint / テスト / ビルドが通ることを確認してください。
@@ -78,6 +78,7 @@ cd pop-maker && npm install && npm run build
 
 ## 公開（GitHub Pages）
 
+- PRを出す・更新すると `.github/workflows/check.yml` が3つのアプリの lint / テスト / ビルドだけを行います（公開はしません）。
 - `main` に変更が入ると `.github/workflows/deploy.yml` が lint → テスト → 両アプリのビルドを行い、自動公開します。
   - GymLog: https://respect00886-byte.github.io/claude-code/
   - meal-tracker: https://respect00886-byte.github.io/claude-code/meal-tracker/
