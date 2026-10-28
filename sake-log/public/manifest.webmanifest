@@ -1,0 +1,12 @@
+{
+  "name": "日本酒ログ - 飲んだお酒の記録",
+  "short_name": "日本酒ログ",
+  "description": "飲んだ日本酒を星とコメントで記録して見返す",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#7a2e3a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

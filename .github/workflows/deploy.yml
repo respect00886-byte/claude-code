@@ -42,6 +42,13 @@ jobs:
       - run: npm run build
         working-directory: pop-maker
       - run: mkdir -p dist/pop-maker && cp -r pop-maker/dist/. dist/pop-maker/
+      - run: npm ci
+        working-directory: sake-log
+      - run: npm test
+        working-directory: sake-log
+      - run: npm run build
+        working-directory: sake-log
+      - run: mkdir -p dist/sake-log && cp -r sake-log/dist/. dist/sake-log/
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
