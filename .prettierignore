@@ -1,0 +1,3 @@
+# 書き方の違う別アプリなので、ルートの npm run format で書き換えない
+meal-tracker/
+pop-maker/

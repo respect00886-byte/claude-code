@@ -14,10 +14,10 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icons/icon.svg'],
       workbox: {
-        // meal-tracker/ と pop-maker/ は同じPagesサイトに同居する別アプリなので、
+        // meal-tracker/ ・ pop-maker/ ・ sake-log/ は同じPagesサイトに同居する別アプリなので、
         // GymLogのService WorkerがそのナビゲーションをGymLog自身の
         // index.htmlにフォールバックさせないよう除外する
-        navigateFallbackDenylist: [/\/meal-tracker\//, /\/pop-maker\//],
+        navigateFallbackDenylist: [/\/meal-tracker\//, /\/pop-maker\//, /\/sake-log\//],
       },
       manifest: {
         name: 'GymLog - 筋トレ・体重記録',
@@ -38,8 +38,8 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
-    // meal-tracker/ と pop-maker/ は別アプリなので、テストはそれぞれのフォルダで行う
-    exclude: ['**/node_modules/**', 'meal-tracker/**', 'pop-maker/**'],
+    // meal-tracker/ ・ pop-maker/ ・ sake-log/ は別アプリなので、テストはそれぞれのフォルダで行う
+    exclude: ['**/node_modules/**', 'meal-tracker/**', 'pop-maker/**', 'sake-log/**'],
     setupFiles: ['fake-indexeddb/auto'],
   },
 })
