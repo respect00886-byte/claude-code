@@ -20,7 +20,6 @@
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
 | pop-maker | `pop-maker/` | 売り場POP作成（見出し・補足文を入力） | React 18 / TypeScript / Vite 5 | localStorage（前回の入力・マイフレーズ・まとめて印刷の一覧） |
 | sake-log | `sake-log/` | 日本酒の記録（星・ワンタップコメント・写真・お店） | React 18 / TypeScript / Vite 5 / Dexie | IndexedDB（DB名 `sake-log`、写真も Blob で保存） |
-
 | ai-proxy-demo | `ai-proxy-demo/` | AIを安全に使う「中継役」の練習（ダミーAI・公開しない） | Node.js 22（追加パッケージなし）/ `node --test` | なし（回数はサーバーの中だけで数える） |
 
 - 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker / sake-log の作業はそれぞれのフォルダに移動してから行います。
