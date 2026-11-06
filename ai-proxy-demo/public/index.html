@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI中継役の練習</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 16px;
+        background: #fafafa;
+        color: #222;
+      }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        height: 120px;
+        font-size: 16px;
+        padding: 8px;
+      }
+      button {
+        width: 100%;
+        padding: 14px;
+        font-size: 18px;
+        margin-top: 8px;
+      }
+      #count { text-align: right; color: #666; }
+      #result { margin-top: 16px; padding: 12px; background: #fff; border-radius: 8px; min-height: 2em; }
+      .error { color: #b00020; }
+    </style>
+  </head>
+  <body>
+    <h1>AI中継役の練習</h1>
+    <p>文章を送ると、中継役がチェックしてからダミーのAIに渡します。</p>
+    <textarea id="text" placeholder="ここに文章を入力（200文字まで）"></textarea>
+    <div id="count">0 / 200文字</div>
+    <button id="send">送る</button>
+    <div id="result"></div>
+
+    <script>
+      const text = document.getElementById("text");
+      const count = document.getElementById("count");
+      const result = document.getElementById("result");
+
+      text.addEventListener("input", () => {
+        count.textContent = `${[...text.value].length} / 200文字`;
+      });
+
+      // ブラウザは合鍵を持たない。中継役（/api/ask）に文章だけ送る
+      document.getElementById("send").addEventListener("click", async () => {
+        result.textContent = "送信中…";
+        result.className = "";
+        try {
+          const res = await fetch("/api/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text.value }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            result.textContent = `${data.answer}（今日の残り：${data.remaining}回）`;
+          } else {
+            result.textContent = data.error;
+            result.className = "error";
+          }
+        } catch {
+          result.textContent = "中継役につながりません。サーバーが動いているか確認してください。";
+          result.className = "error";
+        }
+      });
+    </script>
+  </body>
+</html>

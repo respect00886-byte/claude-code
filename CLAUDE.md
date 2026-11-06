@@ -12,6 +12,7 @@
 ## リポジトリの構成
 
 1つのリポジトリに、独立した4つのアプリが入っています。どちらもサーバー不要で、データは利用者の端末のブラウザ内にだけ保存されます。
+ほかに、公開しない練習用の `ai-proxy-demo/` があります（下記）。
 
 | アプリ | 場所 | 内容 | 主な技術 | データ保存先 |
 | --- | --- | --- | --- | --- |
@@ -19,6 +20,8 @@
 | meal-tracker | `meal-tracker/` | 食事・カロリー管理 | React 18 / TypeScript / Vite 5 | localStorage |
 | pop-maker | `pop-maker/` | 売り場POP作成（見出し・補足文を入力） | React 18 / TypeScript / Vite 5 | localStorage（前回の入力・マイフレーズ・まとめて印刷の一覧） |
 | sake-log | `sake-log/` | 日本酒の記録（星・ワンタップコメント・写真・お店） | React 18 / TypeScript / Vite 5 / Dexie | IndexedDB（DB名 `sake-log`、写真も Blob で保存） |
+
+| ai-proxy-demo | `ai-proxy-demo/` | AIを安全に使う「中継役」の練習（ダミーAI・公開しない） | Node.js 22（追加パッケージなし）/ `node --test` | なし（回数はサーバーの中だけで数える） |
 
 - 依存パッケージ（`package.json`）は**別々**です。meal-tracker / pop-maker / sake-log の作業はそれぞれのフォルダに移動してから行います。
 - 詳しい機能説明は `README.md` と `meal-tracker/README.md` を参照してください。
@@ -54,6 +57,12 @@
 - DB の形を変えるときは GymLog と同じく `this.version(n)` を増やし、利用者のデータを消さないこと。
 - 同じサイトに他のアプリも同居するので、localStorage のキーには `sake-log:` を付けます。
 
+### ai-proxy-demo（`ai-proxy-demo/`）
+
+- ブラウザ → 中継役（`server.js`・`src/proxy.js`）→ ダミーAI（`src/dummyAi.js`）の流れ。上限は `src/limits.js`。
+- 合鍵は環境変数 `AI_API_KEY` から読むだけ。**値をファイルに書かない、返事やログに出さない。** テストではニセの合鍵を使う。
+- サーバーが必要なので GitHub Pages には公開しません。書き方はダブルクォート＋セミコロン。
+
 ## よく使うコマンド
 
 ルート（GymLog）:
@@ -82,6 +91,12 @@ sake-log:
 
 ```bash
 cd sake-log && npm install && npm test && npm run build
+```
+
+ai-proxy-demo:
+
+```bash
+cd ai-proxy-demo && npm test
 ```
 
 作業後は、変更したアプリに応じて上記の lint / テスト / ビルドが通ることを確認してください。
