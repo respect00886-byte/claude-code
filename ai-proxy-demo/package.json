@@ -1,0 +1,14 @@
+{
+  "name": "ai-proxy-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "AIを安全に使う「中継役」の練習（ダミーのAIを使用）",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
