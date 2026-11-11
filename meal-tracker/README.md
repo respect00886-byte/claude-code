@@ -41,21 +41,24 @@ npm run preview   # ビルド結果の確認
 
 ```
 src/
-  types.ts          型定義(MealEntry, AppSettings, MenuItem)
+  types.ts                 型定義(MealEntry, AppSettings, MenuItem など)
   data/
-    starterMenu.ts   同梱の代表的コンビニ/チェーン店メニュー
+    starterMenu.ts         同梱の代表的コンビニ/チェーン店メニュー
+    genericFoods.ts        一般的な料理・食品の目安カロリー/PFC
   lib/
-    storage.ts       localStorage読み書き
-    date.ts          日付処理、区分の自動推測
-    calories.ts       カロリー・PFCの集計、目標との差分計算
-    search.ts         メニュー検索
+    storage.ts             localStorage読み書き
+    date.ts                日付処理、区分の自動推測
+    calories.ts            カロリー・PFCの集計、目標との差分計算
+    bmr.ts                 基礎代謝・目標カロリー/PFCの計算
+    search.ts              メニュー検索
   components/
-    MealForm.tsx       記録の追加/編集フォーム
-    MealList.tsx        記録一覧
-    DailySummary.tsx     当日合計・目標表示
-    HistoryView.tsx       履歴(日付ごとの閲覧)
+    MealForm.tsx           記録の追加/編集フォーム
+    MealList.tsx           記録一覧
+    DailySummary.tsx       当日合計・目標表示
+    HistoryView.tsx        履歴(日付ごとの閲覧)
     GoalSettings.tsx       目標値の設定
-    MenuSearch.tsx          メニュー検索・ワンタップ記録・お気に入り登録
+    ProfileSettings.tsx    身長・体重などから目標値を自動計算
+    MenuSearch.tsx         メニュー検索・ワンタップ記録・お気に入り登録
 ```
 
 ## 今後の拡張(未実装)
